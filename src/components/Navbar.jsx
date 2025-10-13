@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 const Navbar = () => {
+  const { user } = useUser();
+
   const navLinks = [
     { name: "Home", path: "/home" },
     { name: "Posts", path: "/post" },
-    { name: "Donations", path: "/donations" },
+    user?.role === "alumni" && { name: "Donations", path: "/donations" },
     { name: "Event", path: "/events" },
     { name: "Messages", path: "/messages" },
-    { name: "Redeem", path: "/redeem" },
+    user?.role === "student" && { name: "Redeem", path: "/redeem" },
     { name: "Map", path: "/map" },
-  ];
+  ].filter(Boolean); // Remove null/undefined entries
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -98,7 +101,7 @@ const Navbar = () => {
             </li>
             <li>
               <button
-                onClick={() => alert("Logging out")}
+                onClick={() => navigate("/")}
                 className="w-full text-left px-4 py-2 hover:bg-amber-400 hover:text-black transition cursor-pointer"
               >
                 Logout

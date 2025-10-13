@@ -1,29 +1,30 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { assets } from "../assets/assets"; // Import your assets here
 
 const Post = () => {
   const [activeTab, setActiveTab] = useState("recommendations");
   const navigate = useNavigate();
 
   const mentors = [
-    { id: 1, name: "Aarav Mehta", skill: "Full Stack Development", match: 92 },
-    { id: 2, name: "Riya Sharma", skill: "Data Science & Machine Learning", match: 87 },
-    { id: 3, name: "Vikram Nair", skill: "Cybersecurity & Cloud Computing", match: 81 },
-    { id: 4, name: "Sneha Patel", skill: "UI/UX Design", match: 95 },
+    { id: 1, name: "Aarav Mehta", skill: "Full Stack Development", match: 92, avatar: assets.person1 },
+    { id: 2, name: "Riya Sharma", skill: "Data Science & Machine Learning", match: 87, avatar: assets.person3 },
+    { id: 3, name: "Vikram Nair", skill: "Cybersecurity & Cloud Computing", match: 81, avatar: assets.person2 },
+    { id: 4, name: "Sneha Patel", skill: "UI/UX Design", match: 95, avatar: assets.person5 },
   ];
 
   const connections = [
-    { id: 1, name: "Ananya Gupta", role: "Frontend Developer" },
-    { id: 2, name: "Rohit Verma", role: "Data Analyst" },
-    { id: 3, name: "Mehul Jain", role: "Cloud Engineer" },
-    { id: 4, name: "Priya Das", role: "UX Researcher" },
-    { id: 5, name: "Ishaan Roy", role: "Mobile App Developer" },
-    { id: 6, name: "Simran Kaur", role: "AI Engineer" },
-    { id: 7, name: "Kunal Sinha", role: "Backend Developer" },
-    { id: 8, name: "Neha Reddy", role: "Product Manager" },
-    { id: 9, name: "Rahul Yadav", role: "Blockchain Specialist" },
-    { id: 10, name: "Divya Nair", role: "QA Engineer" },
+    { id: 1, name: "Ananya Gupta", role: "Frontend Developer", avatar: assets.person5 },
+    { id: 2, name: "Rohit Verma", role: "Data Analyst", avatar: assets.person6 },
+    { id: 3, name: "Mehul Jain", role: "Cloud Engineer", avatar: assets.person1 },
+    { id: 4, name: "Priya Das", role: "UX Researcher", avatar: assets.person2 },
+    { id: 5, name: "Ishaan Roy", role: "Mobile App Developer", avatar: assets.person3 },
+    { id: 6, name: "Simran Kaur", role: "AI Engineer", avatar: assets.person4 },
+    { id: 7, name: "Kunal Sinha", role: "Backend Developer", avatar: assets.person5 },
+    { id: 8, name: "Neha Reddy", role: "Product Manager", avatar: assets.person6 },
+    { id: 9, name: "Rahul Yadav", role: "Blockchain Specialist", avatar: assets.person1 },
+    { id: 10, name: "Divya Nair", role: "QA Engineer", avatar: assets.person2 },
   ];
 
   const posts = [
@@ -32,30 +33,40 @@ const Post = () => {
       author: "Aarav Mehta",
       role: "Full Stack Developer",
       text: "Excited to share my latest MERN stack project — a real-time collaboration tool!",
+      avatar: assets.person1,
+      bgImage: assets.code
     },
     {
       id: 2,
       author: "Riya Sharma",
       role: "Data Scientist",
       text: "Achieved 98% model accuracy on an AI-driven healthcare dataset. Feeling accomplished!",
+      avatar: assets.person2,
+      bgImage: assets.code2,
     },
     {
       id: 3,
       author: "Vikram Nair",
       role: "Cybersecurity Analyst",
       text: "Conducted a security audit on a fintech startup — learned so much about ethical hacking.",
+      avatar: assets.person3,
+      bgImage: assets.post
     },
     {
       id: 4,
       author: "Sneha Patel",
       role: "UI/UX Designer",
       text: "Designing user experiences that feel human and intuitive is my true passion!",
+      avatar: assets.person4,
+      bgImage: assets.group
     },
     {
       id: 5,
       author: "Kunal Sinha",
       role: "Backend Developer",
       text: "Implemented a new microservices architecture — the performance boost was massive 🚀",
+      avatar: assets.person5,
+      bgImage: assets.code
     },
   ];
 
@@ -69,11 +80,10 @@ const Post = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`capitalize px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-                activeTab === tab
+              className={`capitalize px-4 py-2 rounded-md font-medium transition-colors duration-200 ${activeTab === tab
                   ? "bg-[#C5B239] text-black"
                   : "text-gray-400 hover:text-[#C5B239]"
-              }`}
+                }`}
             >
               {tab === "jobpost" ? "Job Post" : tab}
             </button>
@@ -95,7 +105,11 @@ const Post = () => {
                     onClick={() => navigate(`/mentor/${mentor.id}`)}
                     className="bg-[#1a1a1a] p-5 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-[#222] transition-all duration-200"
                   >
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mb-3"></div>
+                    <img
+                      src={mentor.avatar}
+                      alt={mentor.name}
+                      className="w-16 h-16 rounded-full object-cover mb-3"
+                    />
                     <h3 className="font-semibold text-lg text-[#C5B239]">
                       {mentor.name}
                     </h3>
@@ -126,14 +140,21 @@ const Post = () => {
                     onClick={() => navigate(`/connectionProfile/${conn.id}`)}
                     className="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex justify-between items-center hover:bg-[#222] cursor-pointer transition-all"
                   >
-                    <div>
-                      <h3 className="font-semibold text-[#C5B239]">{conn.name}</h3>
-                      <p className="text-gray-400 text-sm">{conn.role}</p>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={conn.avatar}
+                        alt={conn.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-[#C5B239]">{conn.name}</h3>
+                        <p className="text-gray-400 text-sm">{conn.role}</p>
+                      </div>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/chat/${conn.id}`);
+                        navigate(`/messages`);
                       }}
                       className="bg-[#C5B239] hover:bg-[#b9a531] text-black font-medium px-3 py-1 rounded-md text-sm transition"
                     >
@@ -146,24 +167,39 @@ const Post = () => {
           )}
 
           {/* Feed */}
+          {/* Feed */}
           {activeTab === "feed" && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold mb-2 text-[#C5B239]">Feed</h2>
               {posts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-[#1a1a1a] p-4 rounded-xl shadow-md space-y-3"
+                  className="bg-[#1a1a1a] p-4 rounded-xl shadow-md space-y-3 hover:bg-[#1e1e1e] transition-all"
                 >
+                  {/* Author Info */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
+                    <img
+                      src={post.avatar}
+                      alt={post.author}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
                     <div>
                       <h3 className="font-semibold text-[#C5B239]">{post.author}</h3>
                       <p className="text-gray-400 text-sm">{post.role}</p>
                     </div>
                   </div>
-                  <p className="text-gray-300">{post.text}</p>
-                  <div className="bg-gray-800 h-40 rounded-lg"></div>
 
+                  {/* Post Text */}
+                  <p className="text-gray-300">{post.text}</p>
+
+                  {/* Post Image */}
+                  <img
+                    src={post.bgImage}
+                    alt="Post visual"
+                    className="w-full h-64 rounded-lg object-cover border border-gray-800"
+                  />
+
+                  {/* Actions */}
                   <div className="flex justify-between mt-3 pt-2 border-t border-gray-700">
                     {["👍 Like", "💬 Comment", "✉️ Message"].map((action) => (
                       <button
@@ -178,6 +214,7 @@ const Post = () => {
               ))}
             </div>
           )}
+
 
           {/* Job Post */}
           {activeTab === "jobpost" && (

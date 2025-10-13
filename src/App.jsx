@@ -12,6 +12,10 @@ import Post from "./pages/Post";
 import MentorProfile from "./pages/MentorProfile";
 import Donations from "./pages/Donations";
 import Redeem from "./pages/Redeem";
+import Apply from "./pages/Apply";
+import ConnectionProfile from "./pages/ConnectionProfile";
+import Map from "./pages/Map";
+import Messages from "./pages/Messages";
 // import Feed from "./pages/Feed";
 
 function App() {
@@ -31,6 +35,11 @@ function App() {
         <Route path="/Donations" element={<Donations />} />
         <Route path="/Redeem" element={<Redeem />} />
         {/* <Route path="/feed" element={<Feed />} /> */}
+        <Route path="/mentor/:id" element={<MentorProfile />} />
+        <Route path="/apply/:jobId" element={<Apply />} />
+        <Route path="/connectionProfile/:id" element={<ConnectionProfile />} />
+        <Route path="/map" element={<Map />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </div>
 

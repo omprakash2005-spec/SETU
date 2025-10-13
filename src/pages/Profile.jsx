@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaLinkedin, FaGithub, FaFacebook } from "react-icons/fa";
+import { FaLinkedin, FaGithub, FaFacebook, FaPlus, FaTrash } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import { assets } from "../assets/assets";
 
@@ -54,7 +54,6 @@ const Profile = () => {
   const [modalField, setModalField] = useState("");
   const [inputValues, setInputValues] = useState([]);
 
-  // Open modal to edit all items in a field
   const handleEdit = (field) => {
     setModalField(field);
     setInputValues([...profile[field]]);
@@ -62,10 +61,17 @@ const Profile = () => {
   };
 
   const handleSave = () => {
-    // Remove empty entries
     const cleaned = inputValues.map((val) => val.trim()).filter((val) => val);
     setProfile((prev) => ({ ...prev, [modalField]: cleaned }));
     setModalOpen(false);
+  };
+
+  const handleAddEntry = () => {
+    setInputValues((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveEntry = (index) => {
+    setInputValues((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -123,24 +129,43 @@ const Profile = () => {
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-[#1e1e1e] rounded-xl p-6 w-96 border border-gray-700">
+          <div className="bg-[#1e1e1e] rounded-xl p-6 w-[450px] border border-gray-700 max-h-[80vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-[#C5B239] mb-3">
               Edit {modalField.toUpperCase()}
             </h2>
+
             {inputValues.map((val, idx) => (
-              <textarea
-                key={idx}
-                value={val}
-                onChange={(e) => {
-                  const newArr = [...inputValues];
-                  newArr[idx] = e.target.value;
-                  setInputValues(newArr);
-                }}
-                className="w-full bg-gray-800 text-white rounded-md p-2 mb-2 h-16 focus:outline-none border border-gray-600"
-                placeholder="Type your entry..."
-              />
+              <div key={idx} className="relative mb-3">
+                <textarea
+                  value={val}
+                  onChange={(e) => {
+                    const newArr = [...inputValues];
+                    newArr[idx] = e.target.value;
+                    setInputValues(newArr);
+                  }}
+                  className="w-full bg-gray-800 text-white rounded-md p-2 h-16 focus:outline-none border border-gray-600"
+                  placeholder="Type your entry..."
+                />
+                <button
+                  onClick={() => handleRemoveEntry(idx)}
+                  className="absolute top-2 right-2 text-red-400 hover:text-red-500"
+                  title="Remove this entry"
+                >
+                  <FaTrash />
+                </button>
+              </div>
             ))}
-            <div className="flex justify-end gap-2 mt-2">
+
+            {/* Add new entry button */}
+            <button
+              onClick={handleAddEntry}
+              className="flex items-center justify-center w-full bg-gray-700 text-white py-2 rounded-md mb-4 hover:bg-gray-600 transition"
+            >
+              <FaPlus className="mr-2" /> Add New Entry
+            </button>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setModalOpen(false)}
                 className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition"
