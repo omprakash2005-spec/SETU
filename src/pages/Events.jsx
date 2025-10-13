@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaUser, FaCalendarAlt, FaTimes } from "react-icons/fa";
 import Navbar from "../components/Navbar";
+import { assets } from "../assets/assets";
 
 const Events = () => {
   const [events, setEvents] = useState([
@@ -49,9 +50,7 @@ const Events = () => {
 
   const EventCard = ({ id, title, registered, capacity, date }) => (
     <div className="bg-gray-800 rounded-xl border border-gray-600 p-6 flex flex-col items-center gap-6 min-h-[340px] w-full shadow-lg hover:shadow-2xl transition-shadow duration-300">
-      <div className="w-full h-28 bg-gray-700 rounded-lg mb-4 shadow-inner flex items-center justify-center text-gray-400 text-sm">
-        Event Banner
-      </div>
+      <img src={assets.event} className="w-full h-55 " />
       <div className="text-white text-xl font-semibold text-center tracking-wide">
         {title}
       </div>
@@ -131,7 +130,7 @@ const Events = () => {
             <div className="mt-6 text-center">
               <button
                 onClick={() => setShowCalendar(false)}
-                className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-md text-white"
+                className="bg-[#F0D41D] hover:bg-[#DCBE05] px-6 py-2 rounded-md text-white"
               >
                 Done
               </button>
@@ -193,7 +192,7 @@ const Events = () => {
               ></textarea>
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-md text-white font-semibold transition-colors"
+                className="w-full bg-[#F0D41D] hover:bg-[#DCBE05] py-3 rounded-md text-white font-semibold transition-colors"
               >
                 Add Event
               </button>
