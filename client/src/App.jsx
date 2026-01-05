@@ -19,7 +19,7 @@ import Messages from "./pages/Messages";
 import Admin_Dashboard from "./pages/Admin_Dashboard";
 import Directory from "./pages/Directory";
 import Dashboard from "./pages/Dashboard";
-import Admin_Approval from "./pages/Admin_Approval";
+import Admin_Jobs from "./pages/Admin_Jobs";
 // import Feed from "./pages/Feed";
 
 function App() {
@@ -47,7 +47,7 @@ function App() {
         <Route path="/admin-dashboard" element={<Admin_Dashboard />} />
         <Route path="/directory" element={<Directory />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin-approval" element={<Admin_Approval />} />
+        <Route path="/admin-jobs" element={<Admin_Jobs />} />
       </Routes>
     </div>
 
