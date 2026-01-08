@@ -12,6 +12,7 @@ const Post = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
+  const [searchQuery, setSearchQuery] = useState("");
   // Jobs state
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
@@ -20,11 +21,19 @@ const Post = () => {
 
   // Application form state
   const [applicationData, setApplicationData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    location: "",
+    experience_years: "",
+    expected_salary: "",
+    availability: "",
     resume_url: "",
     resume_text: "",
     cover_letter: "",
     additional_details: "",
   });
+
 
   // Job creation/request form state
   const [jobFormData, setJobFormData] = useState({
@@ -36,11 +45,16 @@ const Post = () => {
   });
 
   const mentors = [
-    { id: 1, name: "Aarav Mehta", skill: "Full Stack Development", match: 92, avatar: assets.person1 },
-    { id: 2, name: "Riya Sharma", skill: "Data Science & Machine Learning", match: 87, avatar: assets.person3 },
-    { id: 3, name: "Vikram Nair", skill: "Cybersecurity & Cloud Computing", match: 81, avatar: assets.person2 },
-    { id: 4, name: "Sneha Patel", skill: "UI/UX Design", match: 95, avatar: assets.person5 },
+    { id: 1, name: "Sneha Patel", skill: "UI/UX Design", match: 95, avatar: assets.person5 },
+    { id: 2, name: "Aarav Mehta", skill: "Full Stack Development", match: 92, avatar: assets.person1 },
+    { id: 3, name: "Riya Sharma", skill: "Data Science & ML", match: 87, avatar: assets.person3 },
+    { id: 4, name: "Vikram Nair", skill: "Cybersecurity", match: 81, avatar: assets.person2 },
+    { id: 5, name: "Kunal Sinha", skill: "Backend Engineering", match: 78, avatar: assets.person4 },
+    { id: 6, name: "Neha Reddy", skill: "Product Management", match: 76, avatar: assets.person6 },
+    { id: 7, name: "Ishaan Roy", skill: "Mobile Development", match: 73, avatar: assets.person3 },
+    { id: 8, name: "Divya Nair", skill: "QA Automation", match: 70, avatar: assets.person2 },
   ];
+
 
   const connections = [
     { id: 1, name: "Ananya Gupta", role: "Frontend Developer", avatar: assets.person5 },
@@ -98,25 +112,32 @@ const Post = () => {
     },
   ]);
   // 🔹 Create Post state
-  const [newPost, setNewPost] = useState({ text: "" });
+  const [newPost, setNewPost] = useState({
+    text: "",
+    image: null,
+  });
+
 
   // 🔹 Create Post handler
   const handleCreatePost = () => {
-    if (!newPost.text.trim()) return;
-    if (!user) return; // safety
+    if (!newPost.text.trim() && !newPost.image) return;
+    if (!user) return;
 
     const post = {
       id: Date.now(),
       author: user.name || "You",
-      role: user.role, // 🔥 fetched from context
+      role: user.role,
       text: newPost.text,
       avatar: assets.person1,
-      bgImage: assets.post,
+      bgImage: newPost.image
+        ? URL.createObjectURL(newPost.image)
+        : null,
     };
 
     setPosts((prev) => [post, ...prev]);
-    setNewPost({ text: "" });
+    setNewPost({ text: "", image: null });
   };
+
 
   // Fetch jobs when jobpost tab is active
   useEffect(() => {
@@ -143,10 +164,19 @@ const Post = () => {
   const handleApplyForJob = async (e) => {
     e.preventDefault();
 
-    if (!applicationData.resume_url && !applicationData.resume_text) {
-      alert("Please provide either a resume URL or resume text.");
+    if (
+      !applicationData.full_name ||
+      !applicationData.email ||
+      !applicationData.phone ||
+      !applicationData.location ||
+      !applicationData.experience_years ||
+      !applicationData.expected_salary ||
+      !applicationData.availability
+    ) {
+      alert("Please fill all required candidate details.");
       return;
     }
+
 
     try {
       const response = await jobsAPI.apply(showApplyModal, applicationData);
@@ -154,11 +184,19 @@ const Post = () => {
         alert("Application submitted successfully!");
         setShowApplyModal(null);
         setApplicationData({
+          full_name: "",
+          email: "",
+          phone: "",
+          location: "",
+          experience_years: "",
+          expected_salary: "",
+          availability: "",
           resume_url: "",
           resume_text: "",
           cover_letter: "",
           additional_details: "",
         });
+
         fetchJobs(); // Refresh jobs to update application count
       }
     } catch (err) {
@@ -204,8 +242,8 @@ const Post = () => {
       }
 
       if (response && response.success) {
-        const message = user?.role === "admin" 
-          ? "Job created and published successfully!" 
+        const message = user?.role === "admin"
+          ? "Job created and published successfully!"
           : "Job request submitted successfully! It will be visible after admin approval.";
         alert(message);
         setShowAddJobModal(false);
@@ -227,11 +265,18 @@ const Post = () => {
       console.error("Error response data:", err.response?.data);
       console.error("Error status:", err.response?.status);
       console.error("Error message:", err.message);
-      
+
       const errorMessage = err.response?.data?.message || err.message || "Failed to submit job request. Please try again.";
       alert("ERROR: " + errorMessage);
     }
   };
+  const filteredMentors = mentors
+  .filter((m) =>
+    m.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  .sort((a, b) => b.match - a.match)
+  .slice(0, 10);
+
 
 
 
@@ -259,38 +304,75 @@ const Post = () => {
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Recommendations */}
           {activeTab === "recommendations" && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold mb-2 text-[#C5B239]">
-                Mentor Recommendations
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {mentors.map((mentor) => (
-                  <div
-                    key={mentor.id}
-                    onClick={() => navigate(`/mentor/${mentor.id}`)}
-                    className="bg-[#1a1a1a] p-5 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-[#222] transition-all duration-200"
-                  >
-                    <img
-                      src={mentor.avatar}
-                      alt={mentor.name}
-                      className="w-16 h-16 rounded-full object-cover mb-3"
-                    />
-                    <h3 className="font-semibold text-lg text-[#C5B239]">
-                      {mentor.name}
-                    </h3>
-                    <p className="text-gray-400 text-sm mb-1">{mentor.skill}</p>
-                    <div className="w-full bg-gray-800 rounded-full h-2.5 mt-3 mb-1">
-                      <div
-                        className="bg-[#C5B239] h-2.5 rounded-full"
-                        style={{ width: `${mentor.match}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-gray-400 text-xs">{mentor.match}% match</p>
-                  </div>
-                ))}
-              </div>
+  <div className="space-y-4">
+    <h2 className="text-xl font-semibold text-[#C5B239]">
+      Mentor Recommendations
+    </h2>
+
+    {/* Search */}
+    <input
+      type="text"
+      placeholder="Search mentors by name..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      className="w-full bg-[#111] text-white p-3 rounded-lg outline-none border border-gray-700 focus:border-[#C5B239]"
+    />
+
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {filteredMentors.map((mentor) => (
+        <div
+          key={mentor.id}
+          className="bg-[#1a1a1a] p-3 rounded-lg shadow-sm hover:bg-[#222] transition"
+        >
+          <div className="flex items-center gap-3">
+            <img
+              src={mentor.avatar}
+              alt={mentor.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-[#C5B239]">
+                {mentor.name}
+              </h3>
+              <p className="text-xs text-gray-400">{mentor.skill}</p>
             </div>
-          )}
+
+            <span className="text-xs text-gray-300 font-medium">
+              {mentor.match}%
+            </span>
+          </div>
+
+          {/* Match bar */}
+          <div className="w-full bg-gray-800 rounded-full h-1.5 mt-2">
+            <div
+              className="bg-[#C5B239] h-1.5 rounded-full"
+              style={{ width: `${mentor.match}%` }}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-between mt-3">
+            <button
+              onClick={() => navigate(`/mentor/${mentor.id}`)}
+              className="text-xs text-gray-400 hover:text-[#C5B239]"
+            >
+              View Profile
+            </button>
+
+            <button
+              onClick={() => navigate("/messages")}
+              className="bg-[#C5B239] text-black text-xs px-3 py-1 rounded-md hover:bg-[#b9a531]"
+            >
+              Connect
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
           {/* Connections */}
           {activeTab === "connections" && (
@@ -298,35 +380,48 @@ const Post = () => {
               <h2 className="text-xl font-semibold mb-2 text-[#C5B239]">
                 Your Connections
               </h2>
+              <input
+                type="text"
+                placeholder="Search connections by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#111] text-white p-3 rounded-lg outline-none border border-gray-700 focus:border-[#C5B239]"
+              />
+
               <div className="grid sm:grid-cols-2 gap-4">
-                {connections.map((conn) => (
-                  <div
-                    key={conn.id}
-                    onClick={() => navigate(`/connectionProfile/${conn.id}`)}
-                    className="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex justify-between items-center hover:bg-[#222] cursor-pointer transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={conn.avatar}
-                        alt={conn.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h3 className="font-semibold text-[#C5B239]">{conn.name}</h3>
-                        <p className="text-gray-400 text-sm">{conn.role}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/messages`);
-                      }}
-                      className="bg-[#C5B239] hover:bg-[#b9a531] text-black font-medium px-3 py-1 rounded-md text-sm transition"
+                {connections
+                  .filter((conn) =>
+                    conn.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((conn) => (
+
+                    <div
+                      key={conn.id}
+                      onClick={() => navigate(`/connectionProfile/${conn.id}`)}
+                      className="bg-[#1a1a1a] p-4 rounded-xl shadow-md flex justify-between items-center hover:bg-[#222] cursor-pointer transition-all"
                     >
-                      Message
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={conn.avatar}
+                          alt={conn.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div>
+                          <h3 className="font-semibold text-[#C5B239]">{conn.name}</h3>
+                          <p className="text-gray-400 text-sm">{conn.role}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/messages`);
+                        }}
+                        className="bg-[#C5B239] hover:bg-[#b9a531] text-black font-medium px-3 py-1 rounded-md text-sm transition"
+                      >
+                        Message
+                      </button>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -346,6 +441,28 @@ const Post = () => {
                   rows={3}
                   className="w-full bg-[#111] text-white p-3 rounded-lg outline-none resize-none"
                 />
+                {/* Image upload */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setNewPost({
+                      ...newPost,
+                      image: e.target.files[0],
+                    })
+                  }
+                  className="text-gray-400 text-sm"
+                />
+
+                {/* Image preview */}
+                {newPost.image && (
+                  <img
+                    src={URL.createObjectURL(newPost.image)}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                  />
+                )}
+
                 <div className="flex justify-end">
                   <button
                     onClick={handleCreatePost}
@@ -381,11 +498,14 @@ const Post = () => {
                   <p className="text-gray-300">{post.text}</p>
 
                   {/* Post Image */}
-                  <img
-                    src={post.bgImage}
-                    alt="Post visual"
-                    className="w-full h-64 rounded-lg object-cover border border-gray-800"
-                  />
+                  {post.bgImage && (
+                    <img
+                      src={post.bgImage}
+                      alt="Post visual"
+                      className="w-full h-64 rounded-lg object-cover border border-gray-800"
+                    />
+                  )}
+
 
                   {/* Actions */}
                   <div className="flex justify-between mt-3 pt-2 border-t border-gray-700">
@@ -498,11 +618,19 @@ const Post = () => {
               onClick={() => {
                 setShowApplyModal(null);
                 setApplicationData({
+                  full_name: "",
+                  email: "",
+                  phone: "",
+                  location: "",
+                  experience_years: "",
+                  expected_salary: "",
+                  availability: "",
                   resume_url: "",
                   resume_text: "",
                   cover_letter: "",
                   additional_details: "",
                 });
+
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
             >
@@ -524,6 +652,116 @@ const Post = () => {
                     setApplicationData({ ...applicationData, resume_url: e.target.value })
                   }
                   className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Full Name *</label>
+                <input
+                  type="text"
+                  value={applicationData.full_name}
+                  onChange={(e) =>
+                    setApplicationData({ ...applicationData, full_name: e.target.value })
+                  }
+                  className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Email *</label>
+                <input
+                  type="email"
+                  value={applicationData.email}
+                  onChange={(e) =>
+                    setApplicationData({ ...applicationData, email: e.target.value })
+                  }
+                  className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Phone Number *</label>
+                <input
+                  type="tel"
+                  value={applicationData.phone}
+                  onChange={(e) =>
+                    setApplicationData({ ...applicationData, phone: e.target.value })
+                  }
+                  className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Current Location *</label>
+                <input
+                  type="text"
+                  value={applicationData.location}
+                  onChange={(e) =>
+                    setApplicationData({ ...applicationData, location: e.target.value })
+                  }
+                  className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-gray-400 text-sm mb-1 block">
+                    Years of Experience *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={applicationData.experience_years}
+                    onChange={(e) =>
+                      setApplicationData({
+                        ...applicationData,
+                        experience_years: e.target.value,
+                      })
+                    }
+                    className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-gray-400 text-sm mb-1 block">
+                    Expected Salary *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 8 LPA"
+                    value={applicationData.expected_salary}
+                    onChange={(e) =>
+                      setApplicationData({
+                        ...applicationData,
+                        expected_salary: e.target.value,
+                      })
+                    }
+                    className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">
+                  Availability / Notice Period *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Immediate / 15 days / 30 days"
+                  value={applicationData.availability}
+                  onChange={(e) =>
+                    setApplicationData({
+                      ...applicationData,
+                      availability: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
+                  required
                 />
               </div>
 
