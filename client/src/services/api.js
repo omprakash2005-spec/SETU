@@ -220,4 +220,62 @@ export const jobsAPI = {
   },
 };
 
+// Posts API calls
+export const postsAPI = {
+  // Get all posts (paginated feed)
+  getAll: async (params = { page: 1, limit: 10 }) => {
+    const response = await api.get('/posts', { params });
+    return response.data;
+  },
+
+  // Create a post (with optional image)
+  create: async (postData) => {
+    // Use FormData for image uploads
+    const formData = new FormData();
+    formData.append('content', postData.content);
+    if (postData.image) {
+      formData.append('image', postData.image);
+    }
+
+    const response = await api.post('/posts', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Delete a post (author or admin only)
+  delete: async (postId) => {
+    const response = await api.delete(`/posts/${postId}`);
+    return response.data;
+  },
+
+  // Like a post
+  like: async (postId) => {
+    const response = await api.post(`/posts/${postId}/like`);
+    return response.data;
+  },
+
+  // Unlike a post
+  unlike: async (postId) => {
+    const response = await api.delete(`/posts/${postId}/like`);
+    return response.data;
+  },
+
+  // Get comments for a post
+  getComments: async (postId) => {
+    const response = await api.get(`/posts/${postId}/comments`);
+    return response.data;
+  },
+
+  // Add a comment
+  addComment: async (postId, commentText) => {
+    const response = await api.post(`/posts/${postId}/comments`, {
+      comment_text: commentText,
+    });
+    return response.data;
+  },
+};
+
 export default api;

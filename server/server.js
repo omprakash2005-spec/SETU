@@ -6,9 +6,11 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
+import postRoutes from './routes/postRoutes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import pool from './config/database.js';
 import { patchEventsTable } from "./config/patchEventsTable.js";
+import { initPostsDatabase } from './config/initPostsDatabase.js';
 
 // Load environment variables
 dotenv.config();
@@ -46,6 +48,7 @@ app.get('/', (req, res) => {
       admin: '/api/admin',
       events: '/api/events',
       jobs: '/api/jobs',
+      posts: '/api/posts',
     },
   });
 });
@@ -63,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/posts', postRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);
@@ -72,6 +76,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await patchEventsTable();
+    await initPostsDatabase();
 
     app.listen(PORT, () => {
       console.log(`

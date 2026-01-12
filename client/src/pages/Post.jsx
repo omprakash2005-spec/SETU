@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { assets } from "../assets/assets"; // Import your assets here
 import { useUser } from "../context/UserContext";
-import { jobsAPI } from "../services/api";
+import { jobsAPI, postsAPI } from "../services/api";
 import { FaTimes, FaBriefcase, FaMapMarkerAlt, FaBuilding, FaUserTie } from "react-icons/fa";
 
 
@@ -66,48 +66,11 @@ const Post = () => {
   };
 
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: "Aarav Mehta",
-      role: "Full Stack Developer",
-      text: "Excited to share my latest MERN stack project — a real-time collaboration tool!",
-      avatar: assets.person1,
-      bgImage: assets.code
-    },
-    {
-      id: 2,
-      author: "Riya Sharma",
-      role: "Data Scientist",
-      text: "Achieved 98% model accuracy on an AI-driven healthcare dataset. Feeling accomplished!",
-      avatar: assets.person2,
-      bgImage: assets.code2,
-    },
-    {
-      id: 3,
-      author: "Vikram Nair",
-      role: "Cybersecurity Analyst",
-      text: "Conducted a security audit on a fintech startup — learned so much about ethical hacking.",
-      avatar: assets.person3,
-      bgImage: assets.post
-    },
-    {
-      id: 4,
-      author: "Sneha Patel",
-      role: "UI/UX Designer",
-      text: "Designing user experiences that feel human and intuitive is my true passion!",
-      avatar: assets.person4,
-      bgImage: assets.group
-    },
-    {
-      id: 5,
-      author: "Kunal Sinha",
-      role: "Backend Developer",
-      text: "Implemented a new microservices architecture — the performance boost was massive 🚀",
-      avatar: assets.person5,
-      bgImage: assets.code
-    },
-  ]);
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [postsPage, setPostsPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+
   // 🔹 Create Post state
   const [newPost, setNewPost] = useState({
     text: "",
@@ -116,23 +79,50 @@ const Post = () => {
 
 
   // 🔹 Create Post handler
-  const handleCreatePost = () => {
-    if (!newPost.text.trim() && !newPost.image) return;
-    if (!user) return;
+  const handleCreatePost = async () => {
+    if (!newPost.text.trim() && !newPost.image) {
+      alert("Please enter some text or select an image");
+      return;
+    }
+    
+    if (!user) {
+      alert("Please log in to create a post");
+      return;
+    }
 
-    const post = {
-      id: Date.now(),
-      author: user.name || "You",
-      role: user.role,
-      text: newPost.text,
-      avatar: assets.person1,
-      bgImage: newPost.image
-        ? URL.createObjectURL(newPost.image)
-        : null,
-    };
+    try {
+      console.log("Creating post...", { user, content: newPost.text });
+      
+      const response = await postsAPI.create({
+        content: newPost.text,
+        image: newPost.image,
+      });
 
-    setPosts((prev) => [post, ...prev]);
-    setNewPost({ text: "", image: null });
+      console.log("Post response:", response);
+
+      if (response.success) {
+        // Add the new post to the feed
+        const formattedPost = {
+          post_id: response.post.post_id,
+          user_id: response.post.user_id,
+          user_role: response.post.user_role,
+          content: response.post.content,
+          image_url: response.post.image_url,
+          created_at: response.post.created_at,
+          likes_count: response.post.likes_count || 0,
+          comments_count: response.post.comments_count || 0,
+          is_liked: response.post.is_liked || false,
+        };
+
+        setPosts((prev) => [formattedPost, ...prev]);
+        setNewPost({ text: "", image: null });
+        alert("Post created successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Unknown error";
+      alert(`Failed to create post: ${errorMsg}`);
+    }
   };
 
 
@@ -142,6 +132,29 @@ const Post = () => {
       fetchJobs();
     }
   }, [activeTab]);
+
+  // Fetch posts when feed tab is active
+  useEffect(() => {
+    if (activeTab === "feed") {
+      fetchPosts();
+    }
+  }, [activeTab]);
+
+  const fetchPosts = async () => {
+    try {
+      setLoadingPosts(true);
+      const response = await postsAPI.getAll({ page: postsPage, limit: 10 });
+      
+      if (response.success) {
+        setPosts(response.posts);
+        setHasMorePosts(response.pagination.hasMore);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
@@ -479,34 +492,41 @@ const Post = () => {
                 </div>
               </div>
 
-              {/* 🔹 Existing Posts (UNCHANGED) */}
-              {posts.map((post) => (
+              {/* Loading state */}
+              {loadingPosts && (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">Loading posts...</p>
+                </div>
+              )}
+
+              {/* Posts from API */}
+              {!loadingPosts && posts.map((post) => (
                 <div
-                  key={post.id}
+                  key={post.post_id}
                   className="bg-[#1a1a1a] p-4 rounded-xl shadow-md space-y-3 hover:bg-[#1e1e1e] transition-all"
                 >
                   {/* Author Info */}
                   <div className="flex items-center gap-3">
                     <img
-                      src={post.avatar}
-                      alt={post.author}
+                      src={assets.person1}
+                      alt="User"
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
                       <h3 className="font-semibold text-[#C5B239]">
-                        {post.author}
+                        {post.user_role === 'student' ? 'Student' : 'Alumni'} (ID: {post.user_id})
                       </h3>
-                      <p className="text-gray-400 text-sm">{post.role}</p>
+                      <p className="text-gray-400 text-sm">{post.user_role}</p>
                     </div>
                   </div>
 
                   {/* Post Text */}
-                  <p className="text-gray-300">{post.text}</p>
+                  <p className="text-gray-300">{post.content}</p>
 
-                  {/* Post Image */}
-                  {post.bgImage && (
+                  {/* Post Image from Cloudinary */}
+                  {post.image_url && (
                     <img
-                      src={post.bgImage}
+                      src={post.image_url}
                       alt="Post visual"
                       className="w-full h-64 rounded-lg object-cover border border-gray-800"
                     />
@@ -515,17 +535,31 @@ const Post = () => {
 
                   {/* Actions */}
                   <div className="flex justify-between mt-3 pt-2 border-t border-gray-700">
-                    {["👍 Like", "💬 Comment", "✉️ Message"].map((action) => (
-                      <button
-                        key={action}
-                        className="text-gray-400 hover:text-[#C5B239] text-sm transition"
-                      >
-                        {action}
-                      </button>
-                    ))}
+                    <button
+                      className="text-gray-400 hover:text-[#C5B239] text-sm transition"
+                    >
+                      👍 Like ({post.likes_count})
+                    </button>
+                    <button
+                      className="text-gray-400 hover:text-[#C5B239] text-sm transition"
+                    >
+                      💬 Comment ({post.comments_count})
+                    </button>
+                    <button
+                      className="text-gray-400 hover:text-[#C5B239] text-sm transition"
+                    >
+                      ✉️ Message
+                    </button>
                   </div>
                 </div>
               ))}
+
+              {/* No posts message */}
+              {!loadingPosts && posts.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">No posts yet. Be the first to share!</p>
+                </div>
+              )}
             </div>
           )}
 
