@@ -32,6 +32,7 @@ app.use(
       "http://localhost:5174"
     ],
     credentials: true,
+    exposedHeaders: ['Content-Disposition'], // Allow frontend to read Content-Disposition header
   })
 );
 

@@ -71,11 +71,10 @@ const Admin_Dashboard = () => {
         <div className="flex gap-4 border-b border-gray-700 pb-3 mb-6">
           <button
             onClick={() => setActiveTab("pending-jobs")}
-            className={`px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-              activeTab === "pending-jobs"
-                ? "bg-[#F0D41D] text-black"
-                : "text-gray-400 hover:text-[#F0D41D]"
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors duration-200 ${activeTab === "pending-jobs"
+              ? "bg-[#F0D41D] text-black"
+              : "text-gray-400 hover:text-[#F0D41D]"
+              }`}
           >
             Pending Job Requests
           </button>

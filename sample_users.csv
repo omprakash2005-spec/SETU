@@ -1,0 +1,6 @@
+Name,Email,Role,Department,Year,Skills,Company,Position,Location
+John Doe,john.doe@example.com,alumni,Computer Science and Engineering,2020,Python;JavaScript;React,Google,Software Engineer,California
+Jane Smith,jane.smith@example.com,student,Information Technology,2025,Java;Spring Boot,,,
+Michael Johnson,michael.j@example.com,alumni,Electrical Engineering,2019,MATLAB;Embedded Systems,Tesla,Hardware Engineer,Texas
+Emily Davis,emily.davis@example.com,student,Computer Science and Engineering,2026,Python;Machine Learning;TensorFlow,,,
+Robert Brown,robert.brown@example.com,alumni,Mechanical Engineering,2018,AutoCAD;SolidWorks,Boeing,Mechanical Engineer,Washington

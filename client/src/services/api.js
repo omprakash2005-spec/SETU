@@ -108,6 +108,51 @@ export const adminAPI = {
     const response = await api.post('/admin/create', adminData);
     return response.data;
   },
+
+  // Get directory (alumni and students)
+  getDirectory: async (params = {}) => {
+    const response = await api.get('/admin/directory', { params });
+    return response.data;
+  },
+
+  // Export directory as CSV
+  exportDirectoryCSV: async () => {
+    const response = await api.get('/admin/directory/export/csv', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Export directory as Excel
+  exportDirectoryExcel: async () => {
+    const response = await api.get('/admin/directory/export/excel', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Export directory as PDF
+  exportDirectoryPDF: async () => {
+    const response = await api.get('/admin/directory/export/pdf', {
+      responseType: 'blob',
+    });
+    return {
+      blob: response.data,
+      headers: response.headers,
+    };
+  },
+
+  // Import directory from CSV
+  importDirectoryCSV: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/admin/directory/import/csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Events API calls

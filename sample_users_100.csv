@@ -1,0 +1,101 @@
+Name,Email,Role,Department,Year,Skills,Company,Position,Location
+Charles Wilson,charles.wilson0@example.com,alumni,Computer Science and Engineering,2022,Linux;Azure;AWS;Spring Boot;AutoCAD,Adobe,Data Scientist,Virginia
+Mark Wilson,mark.wilson1@example.com,student,Electrical Engineering,2027,CAD;Azure;Signal Processing;PostgreSQL,,,
+Michael Thomas,michael.thomas2@example.com,student,Electrical Engineering,2027,Angular;JavaScript;CI/CD;Verilog;Machine Learning,,,
+James Thomas,james.thomas3@example.com,student,Electronics and Communication,2027,Kotlin;Redis;JavaScript;DevOps;GCP,,,
+Donald Roberts,donald.roberts4@example.com,alumni,Mechanical Engineering,2015,Python;Docker;PostgreSQL;Kubernetes;Deep Learning;3D Printing,Meta,Lead Engineer,Texas
+Linda Smith,linda.smith5@example.com,student,Mechanical Engineering,2025,3D Printing;CAD;PyTorch;PostgreSQL,,,
+Kimberly Moore,kimberly.moore6@example.com,student,Electronics and Communication,2026,MongoDB;C++,,,
+George Jones,george.jones7@example.com,student,Computer Science and Engineering,2025,Kubernetes;Power Systems;DevOps,,,
+Charles Torres,charles.torres8@example.com,alumni,Information Technology,2017,Angular;PyTorch;Docker;Data Science;Java,Dell,Electrical Engineer,Singapore
+Anthony Thompson,anthony.thompson9@example.com,alumni,Mechanical Engineering,2019,Control Systems;Raspberry Pi;Python,Toshiba,Frontend Developer,Pune
+Sandra Rodriguez,sandra.rodriguez10@example.com,alumni,Electrical Engineering,2019,Java;SolidWorks;Rust;MongoDB;Deep Learning;C++,Intel,DevOps Engineer,Paris
+Michelle Davis,michelle.davis11@example.com,alumni,Mechanical Engineering,2016,Raspberry Pi;DevOps;Arduino;Angular;AI;Vue.js,Meta,Data Scientist,Georgia
+Paul Clark,paul.clark12@example.com,student,Computer Science and Engineering,2028,C#;Verilog,,,
+James Nelson,james.nelson13@example.com,student,Information Technology,2028,Go;C++,,,
+Melissa Rivera,melissa.rivera14@example.com,alumni,Electronics and Communication,2020,AutoCAD;C#;Deep Learning,AMD,Principal Engineer,Berlin
+Michael Clark,michael.clark15@example.com,alumni,Electrical Engineering,2019,Raspberry Pi;MongoDB;Arduino,Qualcomm,Software Engineer,California
+Lisa Clark,lisa.clark16@example.com,alumni,Mechanical Engineering,2023,Raspberry Pi;Ruby;3D Printing;JavaScript;Power Systems,IBM,Backend Developer,North Carolina
+Robert Rivera,robert.rivera17@example.com,student,Electronics and Communication,2028,MySQL;C#;Git;Java,,,
+Jane Hall,jane.hall18@example.com,student,Electrical Engineering,2028,AutoCAD;VHDL,,,
+Robert Green,robert.green19@example.com,alumni,Computer Science and Engineering,2023,Machine Learning;3D Printing;GCP;Kotlin;Angular;Embedded Systems,Cisco,Technical Lead,Paris
+Mary Lee,mary.lee20@example.com,alumni,Electrical Engineering,2016,Kotlin;Python;Spring Boot;Deep Learning;Kubernetes;C++,Oracle,Product Manager,Chennai
+Andrew Martinez,andrew.martinez21@example.com,alumni,Electrical Engineering,2019,Swift;3D Printing;JavaScript;Angular;Signal Processing;Arduino,Samsung,Cloud Architect,Tokyo
+Donald Davis,donald.davis22@example.com,alumni,Information Technology,2017,Spring Boot;Verilog;Linux;AutoCAD,Deloitte,Lead Engineer,Illinois
+Michelle Baker,michelle.baker23@example.com,alumni,Electronics and Communication,2017,Angular;Ruby;Node.js;CI/CD;Java;3D Printing,AMD,Engineering Manager,North Carolina
+Amanda Allen,amanda.allen24@example.com,student,Electronics and Communication,2024,Java;AWS;CAD;Machine Learning,,,
+Ronald Mitchell,ronald.mitchell25@example.com,alumni,Information Technology,2018,AutoCAD;Signal Processing;Go;Vue.js;Java,Apple,Frontend Developer,Virginia
+Patricia Garcia,patricia.garcia26@example.com,alumni,Information Technology,2015,Redis;JavaScript;Azure;GCP;MySQL,HP,Mechanical Engineer,Georgia
+Steven White,steven.white27@example.com,student,Computer Science and Engineering,2024,MATLAB;Power Systems,,,
+Sarah Smith,sarah.smith28@example.com,student,Mechanical Engineering,2024,Raspberry Pi;AWS;VHDL;JavaScript;Verilog,,,
+George Martin,george.martin29@example.com,alumni,Electrical Engineering,2016,Machine Learning;TypeScript;Swift;Python;Kubernetes,Accenture,ML Engineer,Singapore
+Thomas Rivera,thomas.rivera30@example.com,alumni,Electrical Engineering,2022,AI;TensorFlow;AutoCAD;Angular,Toshiba,Principal Engineer,North Carolina
+Brian Lopez,brian.lopez31@example.com,student,Mechanical Engineering,2027,PostgreSQL;Control Systems;JavaScript;Node.js,,,
+Emily Hernandez,emily.hernandez32@example.com,student,Electrical Engineering,2026,Raspberry Pi;JavaScript;AI,,,
+Jessica Lewis,jessica.lewis33@example.com,alumni,Electrical Engineering,2019,Redis;DevOps;Embedded Systems;PHP,Adobe,Principal Engineer,Massachusetts
+George Lopez,george.lopez34@example.com,student,Electrical Engineering,2026,Rust;MySQL;Power Systems,,,
+George Scott,george.scott35@example.com,student,Electrical Engineering,2028,Rust;TypeScript;AI;3D Printing,,,
+Deborah Nelson,deborah.nelson36@example.com,alumni,Electrical Engineering,2020,C#;Vue.js;Linux;C++,IBM,ML Engineer,Pune
+Margaret Taylor,margaret.taylor37@example.com,alumni,Information Technology,2016,AutoCAD;Ruby;C++,Meta,Software Engineer,Delhi
+Deborah Brown,deborah.brown38@example.com,alumni,Electrical Engineering,2021,Data Science;Vue.js;Swift,Microsoft,Senior Software Engineer,Kolkata
+Jane Harris,jane.harris39@example.com,alumni,Electronics and Communication,2016,PostgreSQL;SQL;Linux;SolidWorks;Node.js,Intel,Hardware Engineer,Delhi
+Joshua Hill,joshua.hill40@example.com,student,Computer Science and Engineering,2028,Raspberry Pi;Rust;MongoDB;Angular,,,
+Amanda Lewis,amanda.lewis41@example.com,student,Electrical Engineering,2024,Raspberry Pi;C++,,,
+Paul Martinez,paul.martinez42@example.com,student,Information Technology,2024,Kotlin;MATLAB,,,
+Donald White,donald.white43@example.com,student,Electrical Engineering,2024,Node.js;VHDL;Swift;React,,,
+William Allen,william.allen44@example.com,alumni,Computer Science and Engineering,2018,Kubernetes;Spring Boot;3D Printing,Cognizant,Engineering Manager,Singapore
+Kevin Martinez,kevin.martinez45@example.com,student,Electrical Engineering,2027,DevOps;Kubernetes;Arduino,,,
+Sandra Miller,sandra.miller46@example.com,alumni,Electronics and Communication,2017,Ruby;3D Printing;Data Science,Toshiba,Product Manager,Tokyo
+Jessica Young,jessica.young47@example.com,alumni,Computer Science and Engineering,2015,Java;Linux;AWS,Microsoft,Data Scientist,Delhi
+Linda Johnson,linda.johnson48@example.com,student,Information Technology,2025,Java;Git;MongoDB,,,
+John Smith,john.smith49@example.com,alumni,Information Technology,2017,React;Spring Boot;PHP;Node.js;Ruby,Qualcomm,Senior Software Engineer,Texas
+Thomas Ramirez,thomas.ramirez50@example.com,alumni,Mechanical Engineering,2023,React;Swift;MATLAB,HCL,Principal Engineer,Singapore
+Robert Jackson,robert.jackson51@example.com,alumni,Mechanical Engineering,2020,C++;Java;React;Go;Azure;AWS,Tech Mahindra,Electrical Engineer,Massachusetts
+Ashley Martinez,ashley.martinez52@example.com,alumni,Mechanical Engineering,2018,Kotlin;CAD;Kubernetes;3D Printing;Python;Azure,TCS,Principal Engineer,Chennai
+Ashley Carter,ashley.carter53@example.com,alumni,Computer Science and Engineering,2015,Deep Learning;Raspberry Pi;SQL;Python;Node.js;MongoDB,AMD,Engineering Manager,Washington
+Andrew Taylor,andrew.taylor54@example.com,alumni,Mechanical Engineering,2019,JavaScript;Verilog;PHP;Kubernetes,Apple,Design Engineer,Toronto
+Betty Carter,betty.carter55@example.com,alumni,Computer Science and Engineering,2019,Git;PyTorch;AWS;CAD;SQL;AI,NVIDIA,Frontend Developer,Massachusetts
+Steven Martinez,steven.martinez56@example.com,student,Mechanical Engineering,2025,AI;Ruby;Raspberry Pi,,,
+Sarah Flores,sarah.flores57@example.com,alumni,Electrical Engineering,2015,Machine Learning;Control Systems;MATLAB;Go;PHP;Azure,Samsung,Senior Software Engineer,Oregon
+Carol Baker,carol.baker58@example.com,student,Electronics and Communication,2027,Angular;AutoCAD;CI/CD,,,
+William Mitchell,william.mitchell59@example.com,student,Computer Science and Engineering,2024,Arduino;AutoCAD;Kubernetes;Java;MongoDB,,,
+Melissa Green,melissa.green60@example.com,alumni,Information Technology,2023,Ruby;VHDL;CAD;IoT;SQL,LG,Hardware Engineer,Singapore
+Mary Campbell,mary.campbell61@example.com,alumni,Mechanical Engineering,2016,MongoDB;AI;Kotlin;Swift,TCS,Data Scientist,Chennai
+John Gonzalez,john.gonzalez62@example.com,alumni,Information Technology,2020,Control Systems;Power Systems;AI;Raspberry Pi,Cognizant,Product Manager,Colorado
+David Green,david.green63@example.com,alumni,Information Technology,2022,IoT;Arduino;MATLAB;Data Science,EY,Data Scientist,Pune
+Edward Baker,edward.baker64@example.com,student,Information Technology,2025,PHP;SQL;CI/CD;C++,,,
+Melissa Smith,melissa.smith65@example.com,alumni,Information Technology,2019,Verilog;Angular;Data Science;PostgreSQL;Redis;CAD,Infosys,Principal Engineer,London
+Ashley Walker,ashley.walker66@example.com,alumni,Information Technology,2022,IoT;Verilog;Vue.js;SolidWorks,AMD,Mechanical Engineer,Virginia
+Jane Campbell,jane.campbell67@example.com,student,Computer Science and Engineering,2028,GCP;Raspberry Pi,,,
+Anthony Jones,anthony.jones68@example.com,alumni,Electrical Engineering,2016,Machine Learning;DevOps;AWS;PostgreSQL;Arduino,Qualcomm,Design Engineer,California
+Brian Flores,brian.flores69@example.com,student,Electronics and Communication,2024,React;Embedded Systems;PHP,,,
+James Nguyen,james.nguyen70@example.com,alumni,Electronics and Communication,2023,Rust;MATLAB;CI/CD,Dell,Product Manager,Pune
+John Hernandez,john.hernandez71@example.com,alumni,Computer Science and Engineering,2019,MATLAB;Control Systems;Vue.js;Docker;PyTorch;React,Sony,Systems Engineer,Georgia
+David Walker,david.walker72@example.com,student,Computer Science and Engineering,2026,MongoDB;Raspberry Pi;Ruby;Arduino;GCP,,,
+Donna Carter,donna.carter73@example.com,alumni,Electronics and Communication,2019,Linux;C#;Verilog;3D Printing,Infosys,Frontend Developer,Berlin
+Michelle Nguyen,michelle.nguyen74@example.com,student,Computer Science and Engineering,2027,Java;Go,,,
+William White,william.white75@example.com,alumni,Electronics and Communication,2023,Rust;Deep Learning;Kubernetes;Signal Processing,Salesforce,Hardware Engineer,Colorado
+Emily Baker,emily.baker76@example.com,student,Electrical Engineering,2027,C++;Verilog;Node.js,,,
+Margaret Torres,margaret.torres77@example.com,alumni,Electronics and Communication,2023,C#;Go;Git;Embedded Systems;Redis;Raspberry Pi,Google,Senior Software Engineer,Mumbai
+Deborah Lee,deborah.lee78@example.com,alumni,Mechanical Engineering,2021,C#;TypeScript;IoT;MATLAB;Signal Processing;PostgreSQL,Meta,Principal Engineer,Tokyo
+Andrew Roberts,andrew.roberts79@example.com,alumni,Mechanical Engineering,2021,C++;PostgreSQL;Kubernetes,Accenture,Engineering Manager,Texas
+Andrew Martinez,andrew.martinez80@example.com,student,Computer Science and Engineering,2026,SolidWorks;3D Printing;Docker;MySQL,,,
+David Sanchez,david.sanchez81@example.com,alumni,Electronics and Communication,2020,Raspberry Pi;Deep Learning;GCP;Git;AI;Kubernetes,Cisco,ML Engineer,Illinois
+Paul Lopez,paul.lopez82@example.com,alumni,Mechanical Engineering,2021,TensorFlow;Go;DevOps,Tech Mahindra,ML Engineer,Kolkata
+Nancy Allen,nancy.allen83@example.com,alumni,Information Technology,2015,Machine Learning;Docker;GCP;Redis,Intel,Lead Engineer,Sydney
+Amanda Wright,amanda.wright84@example.com,student,Mechanical Engineering,2025,VHDL;GCP;Vue.js;Spring Boot,,,
+Karen Hall,karen.hall85@example.com,student,Information Technology,2025,Arduino;Docker;VHDL,,,
+William Carter,william.carter86@example.com,student,Mechanical Engineering,2028,SolidWorks;React;SQL;C#;Angular,,,
+Susan Scott,susan.scott87@example.com,student,Information Technology,2028,React;MongoDB;Python,,,
+Betty White,betty.white88@example.com,alumni,Electrical Engineering,2016,Angular;C#;CI/CD;MySQL;Signal Processing;DevOps,Cisco,Software Engineer,Hyderabad
+Donna Lopez,donna.lopez89@example.com,student,Electrical Engineering,2024,Swift;Angular;CAD;MySQL,,,
+William Wilson,william.wilson90@example.com,alumni,Information Technology,2023,Data Science;SQL;AI,Qualcomm,Mechanical Engineer,Hyderabad
+Brian Jackson,brian.jackson91@example.com,student,Computer Science and Engineering,2025,Data Science;Swift;MongoDB;Go;AWS,,,
+Carol Garcia,carol.garcia92@example.com,student,Information Technology,2026,PyTorch;SolidWorks;AWS;CAD;Kubernetes,,,
+George Brown,george.brown93@example.com,alumni,Mechanical Engineering,2017,PyTorch;Kubernetes;Verilog;JavaScript;Node.js,LG,ML Engineer,Chennai
+Donald Lopez,donald.lopez94@example.com,alumni,Electronics and Communication,2022,Embedded Systems;TensorFlow;Raspberry Pi;Deep Learning,Toshiba,Embedded Engineer,Massachusetts
+Sandra Nguyen,sandra.nguyen95@example.com,alumni,Mechanical Engineering,2015,Control Systems;AWS;AutoCAD,KPMG,Product Manager,North Carolina
+Karen Torres,karen.torres96@example.com,student,Mechanical Engineering,2026,Deep Learning;Machine Learning,,,
+Michael King,michael.king97@example.com,alumni,Information Technology,2017,Signal Processing;Docker;Redis,Google,ML Engineer,Massachusetts
+Kevin Davis,kevin.davis98@example.com,student,Electronics and Communication,2026,AutoCAD;Rust;PostgreSQL;Ruby;Git,,,
+Robert Miller,robert.miller99@example.com,student,Electronics and Communication,2025,Kubernetes;JavaScript,,,
