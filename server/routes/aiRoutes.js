@@ -1,8 +1,10 @@
 import express from "express";
-import { recommendMentors } from "../controllers/aiController.js";
+import { authenticate, isStudent } from "../middleware/auth.js";
+
+import { recommendMentors } from "../controllers/ai_controller.js";
 
 const router = express.Router();
 
-router.post("/mentor-recommendation", recommendMentors);
+router.get("/mentor-recommend", authenticate, isStudent, recommendMentors);
 
 export default router;

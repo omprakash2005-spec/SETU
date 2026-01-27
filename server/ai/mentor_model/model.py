@@ -1,69 +1,110 @@
-import pandas as pd
+import re
+import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import re
 
 # ---------- Helpers ----------
 
 def normalize(text):
+    if not text:
+        return set()
     return set(re.findall(r"[a-zA-Z]+", text.lower()))
 
-def count_skill_overlap(student_skills, mentor_expertise):
+def parse_skills(skills):
+    if isinstance(skills, list):
+        final = []
+        for s in skills:
+            if isinstance(s, str) and "," in s:
+                final.extend([x.strip().lower() for x in s.split(",")])
+            elif isinstance(s, str):
+                final.append(s.strip().lower())
+        return final
+
+    if isinstance(skills, str):
+        skills = skills.strip()
+
+        # Try JSON
+        try:
+            parsed = json.loads(skills)
+            if isinstance(parsed, list):
+                return parse_skills(parsed)
+        except Exception:
+            pass
+
+        # Comma-separated fallback
+        return [s.strip().lower() for s in skills.split(",")]
+
+    return []
+
+
+def count_skill_overlap(student_skills, mentor_skills):
     return len(
         normalize(student_skills).intersection(
-            normalize(mentor_expertise)
+            normalize(" ".join(mentor_skills))
         )
     )
 
-def matched_skills(student_skills, mentor_expertise):
+def matched_skills(student_skills, mentor_skills):
     return list(
         normalize(student_skills).intersection(
-            normalize(mentor_expertise)
+            normalize(" ".join(mentor_skills))
         )
     )
-
-# ---------- Load Data ----------
-
-import os
-
-BASE_DIR = os.path.dirname(__file__)
-CSV_PATH = os.path.join(BASE_DIR, "mentors.csv")
-
-data = pd.read_csv(CSV_PATH)
-
-
-vectorizer = TfidfVectorizer()
-mentor_vectors = vectorizer.fit_transform(data["Expertise"])
 
 # ---------- Main Function ----------
 
-def recommend_mentors(student_skills, limit=50, min_score=0.01):
-    student_vector = vectorizer.transform([student_skills])
-    similarity_scores = cosine_similarity(student_vector, mentor_vectors)[0]
+def recommend_mentors(student_skills, mentors, limit=50, min_score=0.01):
+    if not mentors:
+        return []
 
-    data["Score"] = similarity_scores
-    data["Skill_Match_Count"] = data["Expertise"].apply(
-        lambda x: count_skill_overlap(student_skills, x)
-    )
-    data["Matched_Skills"] = data["Expertise"].apply(
-        lambda x: matched_skills(student_skills, x)
-    )
+    # Normalize student skills
+    student_skills = " ".join(parse_skills(student_skills))
 
-    relevant = data[
-        (data["Score"] >= min_score) &
-        (data["Skill_Match_Count"] > 0)
+    # Prepare mentor texts
+    mentor_texts = [
+        " ".join(parse_skills(m.get("skills", [])))
+        for m in mentors
     ]
 
-    ranked = relevant.sort_values(
-        by=["Skill_Match_Count", "Score", "Experience"],
-        ascending=[False, False, False]
+    vectorizer = TfidfVectorizer()
+    mentor_vectors = vectorizer.fit_transform(mentor_texts)
+    student_vector = vectorizer.transform([student_skills])
+
+    similarity_scores = cosine_similarity(
+        student_vector, mentor_vectors
+    )[0]
+
+    results = []
+
+    for idx, mentor in enumerate(mentors):
+        mentor_skills = parse_skills(mentor.get("skills", []))
+
+        skill_match_count = count_skill_overlap(
+            student_skills, mentor_skills
+        )
+
+        if similarity_scores[idx] >= min_score:
+
+            results.append({
+                "id": mentor.get("id"),
+                "name": mentor.get("name"),
+                "email": mentor.get("email"),
+                "skills": mentor_skills,
+                "experience": mentor.get("experience", 0),
+                "score": float(similarity_scores[idx]),
+                "skill_match_count": skill_match_count,
+                "matched_skills": matched_skills(
+                    student_skills, mentor_skills
+                )
+            })
+
+    results.sort(
+        key=lambda x: (
+            x["skill_match_count"],
+            x["score"],
+            x["experience"]
+        ),
+        reverse=True
     )
 
-    return ranked.head(limit)[[
-        "Mentor_Name",
-        "Expertise",
-        "Experience",
-        "Skill_Match_Count",
-        "Matched_Skills",
-        "Score"
-    ]].to_dict(orient="records")
+    return results[:limit]

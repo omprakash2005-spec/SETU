@@ -8,8 +8,12 @@ CORS(app)   # ✅ THIS IS THE FIX
 @app.route("/mentor-recommend", methods=["POST"])
 def mentor_recommend():
     data = request.get_json()
-    skills = data.get("skills", [])
-    return jsonify(recommend_mentors(skills))
+
+    student_skills = data.get("student_skills", "")
+    mentors = data.get("mentors", [])
+
+    return jsonify(recommend_mentors(student_skills, mentors))
+
 
 if __name__ == "__main__":
     print("Mentor AI server starting...")

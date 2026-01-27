@@ -107,30 +107,47 @@ const Post = () => {
 
   // Fetch mentors from AI model
   useEffect(() => {
-    const fetchMentors = async () => {
-      try {
-        const res = await axios.post("http://127.0.0.1:8000/mentor-recommend", {
-          skills: "C C++ Java Backend,Spring Boot",
-        });
+  const fetchMentors = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-        console.log("Mentor API raw data:", res.data);
-
-        const formatted = res.data.map((m, index) => ({
-          id: index + 1,
-          name: m.Mentor_Name,
-          skill: m.Expertise,
-          match: Math.min(95, Math.round(m.Score * 100)),
-          avatar: getRandomAvatar(),
-        }));
-
-        setRecommendedMentors(formatted);
-      } catch (err) {
-        console.error("Mentor API error:", err);
+      if (!token) {
+        console.log("❌ No token found");
+        return;
       }
-    };
 
-    fetchMentors();
-  }, []);
+      const res = await axios.get(
+        "http://localhost:5001/api/mentor-recommend",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("✅ Mentor API raw data:", res.data);
+
+      const formatted = res.data.map((m, index) => ({
+        id: m.id || index + 1,
+        name: m.name,
+        skill: m.skills.join(", "),
+        match: Math.round((m.score || 0.5) * 100),
+        avatar: getRandomAvatar(),
+      }));
+
+      setRecommendedMentors(formatted);
+    } catch (err) {
+      console.error(
+        "❌ Mentor fetch error:",
+        err.response?.data || err.message
+      );
+    }
+  };
+
+  fetchMentors();
+}, []);
+
+
 
   const handleConnect = async (mentor) => {
     try {
