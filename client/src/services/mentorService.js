@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const getMentorRecommendations = async (token, skills) => {
   const response = await axios.post(
-    "http://localhost:5000/api/ai/mentor-recommendation",
+    `${import.meta.env.VITE_API_URL}/ai/mentor-recommendation`,
     {
       skills: skills, // 🔥 यही missing था
     },

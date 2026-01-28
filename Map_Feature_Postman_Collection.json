@@ -1,0 +1,170 @@
+{
+    "info": {
+        "name": "SETU Map Feature API",
+        "description": "API endpoints for the map feature showing nearby connected users",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Save Location",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"latitude\": 19.076,\n  \"longitude\": 72.8777,\n  \"location_type\": \"gps\",\n  \"address\": \"Mumbai, India\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/locations",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "locations"
+                    ]
+                },
+                "description": "Save or update user's location. Location type must be either 'manual' or 'gps'."
+            },
+            "response": []
+        },
+        {
+            "name": "Get My Location",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/locations/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "locations",
+                        "me"
+                    ]
+                },
+                "description": "Get the current user's saved location."
+            },
+            "response": []
+        },
+        {
+            "name": "Get Nearby Connections",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/locations/nearby?radius=50",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "locations",
+                        "nearby"
+                    ],
+                    "query": [
+                        {
+                            "key": "radius",
+                            "value": "50",
+                            "description": "Radius in kilometers (default: 50)"
+                        }
+                    ]
+                },
+                "description": "Get all connected users within the specified radius. Returns user details and distance."
+            },
+            "response": []
+        },
+        {
+            "name": "Delete My Location",
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/locations/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "locations",
+                        "me"
+                    ]
+                },
+                "description": "Delete the current user's location from the database."
+            },
+            "response": []
+        },
+        {
+            "name": "Login (Get Token)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                },
+                "description": "Login to get authentication token. Copy the token from response and set it in the {{token}} variable."
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5001",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

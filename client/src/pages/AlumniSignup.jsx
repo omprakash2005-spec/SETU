@@ -46,24 +46,24 @@ const AlumniSignup = () => {
 
     try {
       setLoading(true);
-      
-      const response = await fetch('http://localhost:5000/api/auth/alumni/signup', {
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/alumni/signup`, {
         method: 'POST',
         body: payload,
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Signup failed');
       }
-      
+
       // Store token and user data
       if (data.data?.token) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
       }
-      
+
       navigate("/alumniLogin");
     } catch (err) {
       setError(err.message || "Signup failed.");
