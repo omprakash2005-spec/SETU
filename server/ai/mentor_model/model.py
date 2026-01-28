@@ -53,7 +53,7 @@ def matched_skills(student_skills, mentor_skills):
 
 # ---------- Main Function ----------
 
-def recommend_mentors(student_skills, mentors, limit=50, min_score=0.01):
+def recommend_mentors(student_skills, mentors, limit=50, min_score=0.0):
     if not mentors:
         return []
 

@@ -47,7 +47,7 @@ export const createConnection = async (req, res) => {
     });
   } catch (error) {
     console.error('Create connection error:', error);
-    
+
     // Handle unique constraint violation
     if (error.code === '23505') {
       return res.status(409).json({
