@@ -47,36 +47,23 @@ export const studentSignup = async (req, res, next) => {
 
     const lowerEmail = email.toLowerCase();
 
-    // Check if student already exists
-    const existingStudent = await pool.query(
-      'SELECT * FROM students WHERE email = $1',
+    // Check if user already exists in users table
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
       [lowerEmail]
     );
 
-    if (existingStudent.rows.length > 0) {
+    if (existingUser.rows.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'A student account with this email already exists.',
-      });
-    }
-
-    // Check if roll number already exists
-    const existingRollNumber = await pool.query(
-      'SELECT * FROM students WHERE roll_number = $1',
-      [roll_number]
-    );
-
-    if (existingRollNumber.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'This roll number is already registered.',
+        message: 'A user with this email already exists.',
       });
     }
 
     // Validate graduation year
     const gradYear = parseInt(graduation_year);
     const currentYear = new Date().getFullYear();
-    if (isNaN(gradYear) || gradYear < currentYear -10 || gradYear > currentYear + 10) {
+    if (isNaN(gradYear) || gradYear < currentYear - 10 || gradYear > currentYear + 10) {
       return res.status(400).json({
         success: false,
         message: 'Please provide a valid graduation year.',
@@ -103,43 +90,50 @@ export const studentSignup = async (req, res, next) => {
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Create student account
+    // Create student account in users table
     const result = await pool.query(
-      `INSERT INTO students (
-        full_name, email, password_hash, roll_number, 
-        department, graduation_year, student_id_card_url, is_email_verified
+      `INSERT INTO users (
+        name, email, password, role, college, batch_year, 
+        department, verification_document
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
-       RETURNING student_id, full_name, email, roll_number, department, graduation_year, student_id_card_url, is_email_verified, created_at`,
-      [full_name, lowerEmail, passwordHash, roll_number, department, gradYear, idCardUrl]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        full_name,
+        lowerEmail,
+        passwordHash,
+        'student',
+        'Academy of Technology',
+        gradYear,
+        department,
+        idCardUrl
+      ]
     );
 
-    const student = result.rows[0];
+    const user = result.rows[0];
 
     // Generate JWT token
     const token = generateToken({
-      id: student.student_id,
-      email: student.email,
-      role: 'student',
+      id: user.id,
+      email: user.email,
+      role: user.role,
     });
 
     res.status(201).json({
       success: true,
       message: 'Student account created successfully!',
       data: {
-        student: {
-          student_id: student.student_id,
-          user_id: student.student_id, // Normalize ID field
-          full_name: student.full_name,
-          name: student.full_name, // Normalize name field
-          email: student.email,
-          roll_number: student.roll_number,
-          department: student.department,
-          graduation_year: student.graduation_year,
-          student_id_card_url: student.student_id_card_url,
-          is_email_verified: student.is_email_verified,
-          created_at: student.created_at,
-          role: 'student',
+        user: {
+          id: user.id,
+          user_id: user.id, // Normalize ID field
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          college: user.college,
+          batch_year: user.batch_year,
+          department: user.department,
+          verification_document: user.verification_document,
+          created_at: user.created_at,
         },
         token,
       },
@@ -168,10 +162,10 @@ export const studentLogin = async (req, res, next) => {
 
     const lowerEmail = email.toLowerCase();
 
-    // Find student
+    // Find user with role='student'
     const result = await pool.query(
-      'SELECT * FROM students WHERE email = $1',
-      [lowerEmail]
+      'SELECT * FROM users WHERE email = $1 AND role = $2',
+      [lowerEmail, 'student']
     );
 
     if (result.rows.length === 0) {
@@ -181,10 +175,18 @@ export const studentLogin = async (req, res, next) => {
       });
     }
 
-    const student = result.rows[0];
+    const user = result.rows[0];
+
+    // Check if user is active
+    if (!user.is_active) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact support.',
+      });
+    }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, student.password_hash);
+    const isValidPassword = await comparePassword(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({
@@ -195,23 +197,21 @@ export const studentLogin = async (req, res, next) => {
 
     // Generate JWT token
     const token = generateToken({
-      id: student.student_id,
-      email: student.email,
-      role: 'student',
+      id: user.id,
+      email: user.email,
+      role: user.role,
     });
 
-    // Return student data normalized to match app expectations
-    const { password_hash, ...studentData } = student;
+    // Return user data normalized to match app expectations
+    const { password: _, ...userData } = user;
 
     res.status(200).json({
       success: true,
       message: 'Login successful!',
       data: {
-        student: {
-          ...studentData,
-          user_id: studentData.student_id, // Normalize ID field
-          name: studentData.full_name, // Normalize name field
-          role: 'student',
+        user: {
+          ...userData,
+          user_id: userData.id, // Normalize ID field
         },
         token,
       },

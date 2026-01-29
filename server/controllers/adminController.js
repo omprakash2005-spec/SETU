@@ -627,12 +627,11 @@ export const importDirectoryCSV = async (req, res, next) => {
           continue;
         }
 
-        // Check for duplicate email
-        const emailCheckQuery = role === 'alumni'
-          ? 'SELECT email FROM users WHERE email = $1'
-          : 'SELECT email FROM students WHERE email = $1';
-
-        const emailCheck = await pool.query(emailCheckQuery, [row.Email.toLowerCase()]);
+        // Check for duplicate email in users table
+        const emailCheck = await pool.query(
+          'SELECT email FROM users WHERE email = $1',
+          [row.Email.toLowerCase()]
+        );
 
         if (emailCheck.rows.length > 0) {
           errors.push({
@@ -669,21 +668,21 @@ export const importDirectoryCSV = async (req, res, next) => {
             ]
           );
         } else {
-          // For students
+          // For students - insert into users table with role='student'
           const defaultPassword = await hashPassword('changeme123');
-          const rollNumber = `ROLL${Date.now()}${i}`; // Generate unique roll number
 
           await pool.query(
-            `INSERT INTO students (full_name, email, password_hash, roll_number, department, graduation_year, is_email_verified)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            `INSERT INTO users (name, email, password, role, college, batch_year, department, skills)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               row.Name,
               row.Email.toLowerCase(),
               defaultPassword,
-              rollNumber,
-              row.Department,
+              'student',
+              'Academy of Technology',
               year,
-              true, // Mark as verified since admin is importing
+              row.Department,
+              skills,
             ]
           );
         }
@@ -714,9 +713,9 @@ export const importDirectoryCSV = async (req, res, next) => {
 };
 // Export directory as PDF
 export const exportDirectoryPDF = async (req, res, next) => {
-    try {
-        // Fetch all directory data without pagination
-        const alumniResult = await pool.query(`
+  try {
+    // Fetch all directory data without pagination
+    const alumniResult = await pool.query(`
       SELECT 
         name,
         email,
@@ -731,7 +730,7 @@ export const exportDirectoryPDF = async (req, res, next) => {
       ORDER BY created_at DESC
     `);
 
-        const studentsResult = await pool.query(`
+    const studentsResult = await pool.query(`
       SELECT 
         full_name as name,
         email,
@@ -746,105 +745,105 @@ export const exportDirectoryPDF = async (req, res, next) => {
       ORDER BY created_at DESC
     `);
 
-        const allUsers = [...alumniResult.rows, ...studentsResult.rows];
+    const allUsers = [...alumniResult.rows, ...studentsResult.rows];
 
-        // Create PDF document
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    // Create PDF document
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
-        // Set response headers
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename=directory_export.pdf');
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=directory_export.pdf');
 
-        // Pipe PDF to response
-        doc.pipe(res);
+    // Pipe PDF to response
+    doc.pipe(res);
 
-        // Add title
-        doc.fontSize(20).font('Helvetica-Bold').text('SETU Directory', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).font('Helvetica').text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
-        doc.fontSize(10).text(`Total Users: ${allUsers.length}`, { align: 'center' });
-        doc.moveDown(2);
+    // Add title
+    doc.fontSize(20).font('Helvetica-Bold').text('SETU Directory', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).font('Helvetica').text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.fontSize(10).text(`Total Users: ${allUsers.length}`, { align: 'center' });
+    doc.moveDown(2);
 
-        // Table headers
-        const tableTop = doc.y;
-        const colWidths = {
-            name: 120,
-            email: 140,
-            role: 50,
-            department: 100,
-            year: 40,
-        };
+    // Table headers
+    const tableTop = doc.y;
+    const colWidths = {
+      name: 120,
+      email: 140,
+      role: 50,
+      department: 100,
+      year: 40,
+    };
 
-        // Draw header row
-        doc.fontSize(9).font('Helvetica-Bold');
-        let xPos = 50;
-        doc.text('Name', xPos, tableTop, { width: colWidths.name, continued: false });
-        xPos += colWidths.name;
-        doc.text('Email', xPos, tableTop, { width: colWidths.email, continued: false });
-        xPos += colWidths.email;
-        doc.text('Role', xPos, tableTop, { width: colWidths.role, continued: false });
-        xPos += colWidths.role;
-        doc.text('Department', xPos, tableTop, { width: colWidths.department, continued: false });
-        xPos += colWidths.department;
-        doc.text('Year', xPos, tableTop, { width: colWidths.year, continued: false });
+    // Draw header row
+    doc.fontSize(9).font('Helvetica-Bold');
+    let xPos = 50;
+    doc.text('Name', xPos, tableTop, { width: colWidths.name, continued: false });
+    xPos += colWidths.name;
+    doc.text('Email', xPos, tableTop, { width: colWidths.email, continued: false });
+    xPos += colWidths.email;
+    doc.text('Role', xPos, tableTop, { width: colWidths.role, continued: false });
+    xPos += colWidths.role;
+    doc.text('Department', xPos, tableTop, { width: colWidths.department, continued: false });
+    xPos += colWidths.department;
+    doc.text('Year', xPos, tableTop, { width: colWidths.year, continued: false });
 
-        // Draw line under header
-        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
-        doc.moveDown(0.5);
+    // Draw line under header
+    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+    doc.moveDown(0.5);
 
-        // Add data rows
-        doc.font('Helvetica').fontSize(8);
-        let yPos = tableTop + 20;
-        const rowHeight = 20;
+    // Add data rows
+    doc.font('Helvetica').fontSize(8);
+    let yPos = tableTop + 20;
+    const rowHeight = 20;
 
-        allUsers.forEach((user, index) => {
-            // Check if we need a new page
-            if (yPos > 700) {
-                doc.addPage();
-                yPos = 50;
-            }
+    allUsers.forEach((user, index) => {
+      // Check if we need a new page
+      if (yPos > 700) {
+        doc.addPage();
+        yPos = 50;
+      }
 
-            xPos = 50;
+      xPos = 50;
 
-            // Truncate long text to fit in columns
-            const name = (user.name || '').substring(0, 25);
-            const email = (user.email || '').substring(0, 30);
-            const role = user.role === 'alumni' ? 'Alumni' : 'Student';
-            const dept = (user.department || '').substring(0, 20);
-            const year = user.year || '';
+      // Truncate long text to fit in columns
+      const name = (user.name || '').substring(0, 25);
+      const email = (user.email || '').substring(0, 30);
+      const role = user.role === 'alumni' ? 'Alumni' : 'Student';
+      const dept = (user.department || '').substring(0, 20);
+      const year = user.year || '';
 
-            doc.text(name, xPos, yPos, { width: colWidths.name, continued: false });
-            xPos += colWidths.name;
-            doc.text(email, xPos, yPos, { width: colWidths.email, continued: false });
-            xPos += colWidths.email;
-            doc.text(role, xPos, yPos, { width: colWidths.role, continued: false });
-            xPos += colWidths.role;
-            doc.text(dept, xPos, yPos, { width: colWidths.department, continued: false });
-            xPos += colWidths.department;
-            doc.text(year.toString(), xPos, yPos, { width: colWidths.year, continued: false });
+      doc.text(name, xPos, yPos, { width: colWidths.name, continued: false });
+      xPos += colWidths.name;
+      doc.text(email, xPos, yPos, { width: colWidths.email, continued: false });
+      xPos += colWidths.email;
+      doc.text(role, xPos, yPos, { width: colWidths.role, continued: false });
+      xPos += colWidths.role;
+      doc.text(dept, xPos, yPos, { width: colWidths.department, continued: false });
+      xPos += colWidths.department;
+      doc.text(year.toString(), xPos, yPos, { width: colWidths.year, continued: false });
 
-            yPos += rowHeight;
+      yPos += rowHeight;
 
-            // Draw separator line every 5 rows
-            if ((index + 1) % 5 === 0) {
-                doc.moveTo(50, yPos - 5).lineTo(550, yPos - 5).strokeOpacity(0.3).stroke().strokeOpacity(1);
-            }
-        });
+      // Draw separator line every 5 rows
+      if ((index + 1) % 5 === 0) {
+        doc.moveTo(50, yPos - 5).lineTo(550, yPos - 5).strokeOpacity(0.3).stroke().strokeOpacity(1);
+      }
+    });
 
-        // Add footer
-        doc.fontSize(8).text(
-            `SETU - Alumni & Student Directory | Page ${doc.bufferedPageRange().count}`,
-            50,
-            750,
-            { align: 'center' }
-        );
+    // Add footer
+    doc.fontSize(8).text(
+      `SETU - Alumni & Student Directory | Page ${doc.bufferedPageRange().count}`,
+      50,
+      750,
+      { align: 'center' }
+    );
 
-        // Finalize PDF
-        doc.end();
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        next(error);
-    }
+    // Finalize PDF
+    doc.end();
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    next(error);
+  }
 };
 
 // ==================== ANALYTICS ENDPOINTS ====================
@@ -870,7 +869,7 @@ export const getAnalyticsKPIs = async (req, res, next) => {
     );
     const totalUsers = parseInt(totalUsersResult.rows[0].count);
     const totalUsersLast = parseInt(totalUsersLastWeek.rows[0].count);
-    const totalUsersChange = totalUsersLast > 0 
+    const totalUsersChange = totalUsersLast > 0
       ? (((totalUsers - totalUsersLast) / totalUsersLast) * 100).toFixed(1) + '%'
       : '0%';
 
@@ -1014,7 +1013,7 @@ export const getAnalyticsKPIs = async (req, res, next) => {
 export const getUserRegistrationsTrend = async (req, res, next) => {
   try {
     const { period = '30d' } = req.query;
-    
+
     let days = 30;
     if (period === '7d') days = 7;
     else if (period === '90d') days = 90;
@@ -1040,16 +1039,16 @@ export const getUserRegistrationsTrend = async (req, res, next) => {
     const labels = [];
     const alumniData = [];
     const studentData = [];
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-      
+
       const alumniCount = result.rows.find(r => r.date.toISOString().split('T')[0] === dateStr && r.role === 'alumni');
       const studentCount = result.rows.find(r => r.date.toISOString().split('T')[0] === dateStr && r.role === 'student');
-      
+
       alumniData.push(alumniCount ? parseInt(alumniCount.count) : 0);
       studentData.push(studentCount ? parseInt(studentCount.count) : 0);
     }
@@ -1145,7 +1144,7 @@ export const getUsersByRole = async (req, res, next) => {
 export const getPostsActivity = async (req, res, next) => {
   try {
     const { period = '30d' } = req.query;
-    
+
     let days = 30;
     if (period === '7d') days = 7;
     else if (period === '90d') days = 90;
@@ -1184,16 +1183,16 @@ export const getPostsActivity = async (req, res, next) => {
     const labels = [];
     const postsData = [];
     const commentsData = [];
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-      
+
       const postCount = postsResult.rows.find(r => r.date.toISOString().split('T')[0] === dateStr);
       const commentCount = commentsResult.rows.find(r => r.date.toISOString().split('T')[0] === dateStr);
-      
+
       postsData.push(postCount ? parseInt(postCount.count) : 0);
       commentsData.push(commentCount ? parseInt(commentCount.count) : 0);
     }
@@ -1312,7 +1311,7 @@ export const getStudentSkills = async (req, res, next) => {
           }
         });
       }
-      
+
       // Process interests array
       if (row.interests && Array.isArray(row.interests)) {
         row.interests.forEach(interest => {

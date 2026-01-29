@@ -50,15 +50,15 @@ const StudentSignup = () => {
         body: payload,
       });
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Signup failed');
       }
-      
+
       // Store token and redirect to login
       if (data.data?.token) {
         localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.student));
+        localStorage.setItem('user', JSON.stringify(data.data.user));
       }
       navigate("/studentLogin");
     } catch (err) {

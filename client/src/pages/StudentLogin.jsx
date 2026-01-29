@@ -49,10 +49,10 @@ const StudentLogin = () => {
       if (data.success) {
         // Store token and user data
         localStorage.setItem("token", data.data.token);
-        localStorage.setItem("user", JSON.stringify(data.data.student));
+        localStorage.setItem("user", JSON.stringify(data.data.user));
 
         // Set user context
-        setUser(data.data.student);
+        setUser(data.data.user);
 
         // Navigate to home
         navigate("/home");
