@@ -85,9 +85,10 @@ export const getNearbyConnectedLocations = async (userId, userLat, userLon, radi
     AND EXISTS (
       SELECT 1 FROM mentor_connections mc
       WHERE (
-        (mc.user_id = $1 AND mc.mentor_identifier = ul.user_id::TEXT) OR
-        (mc.user_id = ul.user_id AND mc.mentor_identifier = $1::TEXT)
+        (mc.requester_id = $1 AND mc.receiver_id = ul.user_id) OR
+        (mc.receiver_id = $1 AND mc.requester_id = ul.user_id)
       )
+      AND mc.request_status = 'accepted'
     )
     AND (
       6371 * acos(

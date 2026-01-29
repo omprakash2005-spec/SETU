@@ -1,52 +1,55 @@
 import pool from './database.js';
 
-/**
- * Initialize Mentor Connections Database Schema
- * Creates table for storing user-mentor connections
- */
-
 export const initConnectionsDatabase = async () => {
   const client = await pool.connect();
 
   try {
     console.log('🔄 Initializing mentor connections database schema...');
 
-    // Create mentor_connections table
+    /* 1️⃣ Base table (safe) */
     await client.query(`
       CREATE TABLE IF NOT EXISTS mentor_connections (
         connection_id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        user_role VARCHAR(20) NOT NULL CHECK (user_role IN ('student', 'alumni')),
-        mentor_name VARCHAR(255) NOT NULL,
+        requester_id INTEGER NOT NULL,
+        requester_role VARCHAR(20) CHECK (requester_role IN ('student','alumni')),
+        receiver_id INTEGER,
+        receiver_role VARCHAR(20) CHECK (receiver_role IN ('student','alumni')),
+        mentor_name VARCHAR(255),
         mentor_skill VARCHAR(500),
         mentor_avatar TEXT,
-        match_score INTEGER,
+        match_score INTEGER DEFAULT 0,
         mentor_identifier VARCHAR(255),
+        request_status VARCHAR(20) DEFAULT 'pending'
+          CHECK (request_status IN ('pending','accepted','rejected')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, mentor_name)
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('✅ Mentor connections table created/verified');
 
-    // Create indexes for performance
+    /* 2️⃣ Add missing columns safely (THIS IS THE FIX) */
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_connections_user_id 
-      ON mentor_connections(user_id);
+      ALTER TABLE mentor_connections
+        ADD COLUMN IF NOT EXISTS requester_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS receiver_name VARCHAR(255);
+    `);
+
+    /* 3️⃣ Indexes (safe) */
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_connections_requester_id
+      ON mentor_connections(requester_id);
     `);
 
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_connections_user_role 
-      ON mentor_connections(user_role);
+      CREATE INDEX IF NOT EXISTS idx_connections_receiver_id
+      ON mentor_connections(receiver_id);
     `);
 
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_connections_created_at 
-      ON mentor_connections(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_connections_status
+      ON mentor_connections(request_status);
     `);
 
-    console.log('✅ Indexes created/verified');
-
-    console.log('✅ Mentor connections database initialization complete!');
+    console.log('✅ Mentor connections DB ready (idempotent)');
   } catch (error) {
     console.error('❌ Error initializing mentor connections database:', error);
     throw error;

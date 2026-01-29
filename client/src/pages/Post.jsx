@@ -126,11 +126,11 @@ const Post = () => {
 
   useEffect(() => {
     const fetchStudentRequests = async () => {
-      if (!user || user.role !== "alumni") return;
+      if (!user) return;
 
       try {
         setLoadingStudentRequests(true);
-        const res = await connectionsAPI.getStudentRequests();
+        const res = await connectionsAPI.getPendingRequests();
         if (res.success) {
           setStudentRequests(res.requests);
         }
@@ -141,8 +141,10 @@ const Post = () => {
       }
     };
 
-    fetchStudentRequests();
-  }, [user]);
+    if (activeTab === 'connections') {
+      fetchStudentRequests();
+    }
+  }, [user, activeTab]);
 
   // Fetch mentors from AI model
   useEffect(() => {
@@ -194,8 +196,16 @@ const Post = () => {
         return;
       }
 
-      // Save connection to database
+      // Prevent self-connection
+      if (mentor.id === user.id || mentor.id === user.user_id || mentor.id === user.student_id) {
+        alert("You cannot connect with yourself");
+        return;
+      }
+
+      // Create connection request
       const response = await connectionsAPI.create({
+        receiver_id: mentor.id,
+        receiver_name: mentor.name,
         mentor_name: mentor.name,
         mentor_skill: mentor.skill,
         mentor_avatar: mentor.avatar,
@@ -210,20 +220,7 @@ const Post = () => {
         // Remove from recommendations
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
 
-        // Optionally add to connections immediately
-        setConnections((prev) => [
-          {
-            id: response.connection.connection_id,
-            name: mentor.name,
-            skill: mentor.skill,
-            avatar: mentor.avatar,
-            match: mentor.match,
-          },
-          ...prev,
-        ]);
-
-        alert(`Successfully connected with ${mentor.name}!`);
-        setActiveTab("connections");
+        alert(`Connection request sent to ${mentor.name}!`);
       }
     } catch (error) {
       console.error("Failed to connect:", error);
@@ -233,8 +230,10 @@ const Post = () => {
         alert("You are already connected with this mentor");
         setConnectedMentorNames((prev) => new Set([...prev, mentor.name]));
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
+      } else if (error.response?.data?.message) {
+        alert(error.response.data.message);
       } else {
-        alert("Failed to connect with mentor. Please try again.");
+        alert("Failed to send connection request. Please try again.");
       }
     }
   };
@@ -243,7 +242,18 @@ const Post = () => {
       const res = await connectionsAPI.acceptRequest(requestId);
       if (res.success) {
         setStudentRequests(prev => prev.filter(r => r.request_id !== requestId));
-        fetchConnections(); // refresh mentor list
+        // Refresh connections list
+        const response = await connectionsAPI.getAll();
+        if (response.success) {
+          const formattedConnections = response.connections.map((conn) => ({
+            id: conn.connection_id,
+            name: conn.mentor_name,
+            skill: conn.mentor_skill,
+            avatar: conn.mentor_avatar || assets.person1,
+            match: conn.match_score,
+          }));
+          setConnections(formattedConnections);
+        }
         alert("Connection accepted!");
       }
     } catch (err) {
@@ -953,11 +963,11 @@ const Post = () => {
                 )}
               </div>
 
-              {/* RIGHT: Student Requests Sidebar (ALUMNI ONLY) */}
-              {user?.role === "alumni" && (
+              {/* RIGHT: Connection Requests Sidebar (FOR ALL USERS) */}
+              {user && (
                 <div className="w-80 bg-[#1a1a1a] p-4 rounded-xl border border-gray-700 h-fit sticky top-24">
                   <h3 className="text-lg font-semibold text-[#C5B239] mb-3">
-                    Student Connection Requests
+                    Connection Requests
                   </h3>
 
                   {loadingStudentRequests ? (
@@ -975,7 +985,7 @@ const Post = () => {
                             {req.student_name}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {req.student_skill || "Student"}
+                            {req.student_role === 'student' ? 'Student' : 'Alumni'}
                           </p>
 
                           <div className="flex gap-2 mt-2">

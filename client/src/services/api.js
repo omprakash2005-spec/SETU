@@ -347,15 +347,33 @@ export const postsAPI = {
 
 // Connection API calls
 export const connectionsAPI = {
-  // Create new connection
+  // Create new connection request
   create: async (connectionData) => {
     const response = await api.post('/connections', connectionData);
     return response.data;
   },
 
-  // Get all connections for current user
+  // Get all accepted connections for current user
   getAll: async () => {
     const response = await api.get('/connections');
+    return response.data;
+  },
+
+  // Get pending connection requests (incoming)
+  getPendingRequests: async () => {
+    const response = await api.get('/connections/requests/pending');
+    return response.data;
+  },
+
+  // Accept a connection request
+  acceptRequest: async (requestId) => {
+    const response = await api.post(`/connections/accept/${requestId}`);
+    return response.data;
+  },
+
+  // Reject a connection request
+  rejectRequest: async (requestId) => {
+    const response = await api.post(`/connections/reject/${requestId}`);
     return response.data;
   },
 
