@@ -83,37 +83,39 @@ const Post = () => {
   const [connections, setConnections] = useState([]);
 
   // Fetch existing connections on mount
-  useEffect(() => {
-    const fetchConnections = async () => {
-      if (!user) return;
+  // Fetch existing connections
+  const fetchConnections = React.useCallback(async () => {
+    if (!user) return;
 
-      try {
-        const response = await connectionsAPI.getAll();
-        if (response.success) {
-          // Format connections for display
-          const formattedConnections = response.connections.map((conn) => ({
-            id: conn.connection_id,
-            name: conn.mentor_name,
-            skill: conn.mentor_skill,
-            avatar: conn.mentor_avatar || assets.person1,
-            match: conn.match_score,
-          }));
+    try {
+      const response = await connectionsAPI.getAll();
+      if (response.success) {
+        // Format connections for display
+        const formattedConnections = response.connections.map((conn) => ({
+          id: conn.connection_id,
+          name: conn.mentor_name,
+          skill: conn.mentor_skill,
+          avatar: conn.mentor_avatar || assets.profile,
+          match: conn.match_score,
+        }));
 
-          setConnections(formattedConnections);
+        setConnections(formattedConnections);
 
-          // Track connected mentor names
-          const connectedNames = new Set(
-            response.connections.map((c) => c.mentor_name)
-          );
-          setConnectedMentorNames(connectedNames);
-        }
-      } catch (error) {
-        console.error("Failed to fetch connections:", error);
+        // Track connected mentor names
+        const connectedNames = new Set(
+          response.connections.map((c) => c.mentor_name)
+        );
+        setConnectedMentorNames(connectedNames);
       }
-    };
-
-    fetchConnections();
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+    }
   }, [user]);
+
+  // Fetch connections on mount
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
 
   useEffect(() => {
     const fetchStudentRequests = async () => {
@@ -121,7 +123,7 @@ const Post = () => {
 
       try {
         setLoadingStudentRequests(true);
-        const res = await connectionsAPI.getStudentRequests();
+        const res = await connectionsAPI.getPendingRequests();
         if (res.success) {
           setStudentRequests(res.requests);
         }
@@ -157,14 +159,18 @@ const Post = () => {
 
         console.log("✅ Mentor API raw data:", res.data);
 
-        const formatted = res.data.map((m, index) => ({
-          id: m.id || index,
-          name: m.name,
-          skill: m.skills.join(", "),
-          match: Math.round((m.score || 0.5) * 100),
-          avatar: getRandomAvatar(),
-        }));
+        const formatted = res.data.map((m, index) => {
+          console.log(`Mentor ${index}:`, { id: m.id, name: m.name });
+          return {
+            id: m.id || index,
+            name: m.name,
+            skill: m.skills.join(", "),
+            match: Math.round((m.score || 0.5) * 100),
+            avatar: m.profile_image || assets.profile,
+          };
+        });
 
+        console.log("📋 Formatted mentors:", formatted);
         setRecommendedMentors(formatted);
       } catch (err) {
         console.error(
@@ -190,34 +196,22 @@ const Post = () => {
 
       // Save connection to database
       const response = await connectionsAPI.create({
+        receiver_id: mentor.id,
         mentor_name: mentor.name,
         mentor_skill: mentor.skill,
-        mentor_avatar: mentor.avatar,
         match_score: mentor.match,
         mentor_identifier: `${mentor.id}`,
       });
 
       if (response.success) {
-        // Update local state immediately
+        // Mark as pending (don't add to connections yet)
         setConnectedMentorNames((prev) => new Set([...prev, mentor.name]));
 
         // Remove from recommendations
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
 
-        // Optionally add to connections immediately
-        setConnections((prev) => [
-          {
-            id: response.connection.connection_id,
-            name: mentor.name,
-            skill: mentor.skill,
-            avatar: mentor.avatar,
-            match: mentor.match,
-          },
-          ...prev,
-        ]);
-
-        alert(`Successfully connected with ${mentor.name}!`);
-        setActiveTab("connections");
+        // Show pending status message
+        alert(`Connection request sent to ${mentor.name}! Waiting for approval.`);
       }
     } catch (error) {
       console.error("Failed to connect:", error);
@@ -227,8 +221,12 @@ const Post = () => {
         alert("You are already connected with this mentor");
         setConnectedMentorNames((prev) => new Set([...prev, mentor.name]));
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
+      } else if (error.response?.data?.message?.includes("already sent")) {
+        alert("Connection request already sent to this mentor");
+        setConnectedMentorNames((prev) => new Set([...prev, mentor.name]));
+        setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
       } else {
-        alert("Failed to connect with mentor. Please try again.");
+        alert("Failed to send connection request. Please try again.");
       }
     }
   };
@@ -859,7 +857,9 @@ const Post = () => {
                     {/* Actions */}
                     <div className="flex justify-between mt-3">
                       <button
-                        onClick={() => navigate(`/mentor/${mentor.id}`)}
+                        onClick={() => {
+                          navigate(`/mentor/${mentor.id}`);
+                        }}
                         className="text-xs text-gray-400 hover:text-[#C5B239]"
                       >
                         View Profile
@@ -1107,7 +1107,7 @@ const Post = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={post.author_avatar || assets.person1}
+                          src={post.author_avatar || assets.profile}
                           alt="User"
                           className="w-10 h-10 rounded-full object-cover"
                         />

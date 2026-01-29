@@ -45,7 +45,7 @@ export const recommendMentors = async (req, res) => {
        WHERE role = $1 AND id != $2`,
       [recommendationRole, userId]
     );
-console.log("Mentors from DB:", mentorResult.rows);
+    console.log("Mentors from DB:", mentorResult.rows);
 
     const mentors = mentorResult.rows.map((m) => ({
       id: m.id,
@@ -53,8 +53,8 @@ console.log("Mentors from DB:", mentorResult.rows);
       email: m.email,
       skills:
         typeof m.skills === "string" ? JSON.parse(m.skills) : m.skills || [],
-      experience: m.experience || 0,
-       profile_image: m.profile_image || null, // ✅ ADD THIS
+      experience: Array.isArray(m.experience) ? m.experience.join(", ") : (m.experience || null),
+      profile_image: m.profile_image || null, // ✅ ADD THIS
     }));
 
     console.log("Mentors sent to AI:", mentors.length);
@@ -67,6 +67,11 @@ console.log("Mentors from DB:", mentorResult.rows);
         mentors,
       }
     );
+
+    console.log("🔍 AI Response received:", aiResponse.data.length, "mentors");
+    if (aiResponse.data.length > 0) {
+      console.log("First AI result:", aiResponse.data[0]);
+    }
 
     return res.json(aiResponse.data);
   } catch (error) {

@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout, getProfile, updateProfile, alumniSignup, uploadProfilePicture } from '../controllers/authController.js';
+import { register, login, logout, getProfile, updateProfile, alumniSignup, uploadProfilePicture, getUserById } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import { uploadIdCard, upload } from '../config/multer.js';
 
@@ -9,6 +9,7 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', login);
 router.post('/alumni/signup', uploadIdCard.single('verification_document'), alumniSignup);
+router.get('/users/:id', getUserById); // Public profile view
 
 // Protected routes
 router.post('/logout', authenticate, logout);
@@ -18,3 +19,4 @@ router.post('/profile/upload-picture', authenticate, upload.single('profile_pict
 
 // Export router
 export default router;
+

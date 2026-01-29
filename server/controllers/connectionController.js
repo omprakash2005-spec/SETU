@@ -8,14 +8,14 @@ export const createConnection = async (req, res) => {
   try {
     const { id: requesterId, role: requesterRole } = req.user;
     const {
-  receiver_id = null,
-  receiver_name = null,
-  mentor_name = null,
-  mentor_skill = null,
-  mentor_avatar = null,
-  match_score = 0,
-  mentor_identifier = null
-} = req.body;
+      receiver_id = null,
+      receiver_name = null,
+      mentor_name = null,
+      mentor_skill = null,
+      mentor_avatar = null,
+      match_score = 0,
+      mentor_identifier = null
+    } = req.body;
 
 
     // Validate required fields
@@ -64,7 +64,7 @@ export const createConnection = async (req, res) => {
     // Get receiver details if receiver_id provided
     let receiverRole = null;
     let finalReceiverName = receiver_name;
-    
+
     if (receiver_id) {
       const receiverQuery = await pool.query(
         'SELECT name, role FROM users WHERE id = $1',
@@ -84,7 +84,7 @@ export const createConnection = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
        RETURNING *`,
       [requesterId, requesterRole, requesterName, receiver_id, receiverRole, finalReceiverName,
-       mentor_name, mentor_skill, mentor_avatar, match_score, mentor_identifier]
+        mentor_name, mentor_skill, mentor_avatar, match_score, mentor_identifier]
     );
 
     res.status(201).json({
@@ -122,7 +122,7 @@ export const getConnections = async (req, res) => {
           ELSE mc.requester_name
         END as mentor_name,
         mc.mentor_skill,
-        COALESCE(u.profile_image, mc.mentor_avatar) as mentor_avatar,
+        u.profile_image as mentor_avatar,
         mc.match_score,
         mc.mentor_identifier,
         mc.created_at
@@ -138,6 +138,8 @@ export const getConnections = async (req, res) => {
        ORDER BY mc.created_at DESC`,
       [userId]
     );
+
+    console.log('🔍 Connections query result:', result.rows);
 
     res.status(200).json({
       success: true,

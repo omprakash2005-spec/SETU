@@ -560,3 +560,53 @@ export const uploadProfilePicture = async (req, res, next) => {
   }
 };
 
+// Get user profile by ID (public profile view)
+export const getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    console.log('🔍 getUserById called with ID:', id, 'Type:', typeof id);
+
+    // Validate ID
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID provided',
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, email, role, college, batch_year, department, phone, bio, 
+              profile_image, linkedin_url, github_url, facebook_url, current_company, 
+              current_position, location, skills, interests, pronouns, degree, 
+              experience, education, projects, created_at
+       FROM users WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
+
+    const user = result.rows[0];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user profile.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+

@@ -11,10 +11,21 @@ def mentor_recommend():
 
     student_skills = data.get("student_skills", "")
     mentors = data.get("mentors", [])
+    
+    print(f"🔍 Received {len(mentors)} mentors")
+    if mentors:
+        print(f"First mentor: {mentors[0]}")
+    
+    result = recommend_mentors(student_skills, mentors)
+    
+    print(f"📤 Returning {len(result)} recommendations")
+    if result:
+        print(f"First result: {result[0]}")
 
-    return jsonify(recommend_mentors(student_skills, mentors))
+    return jsonify(result)
 
 
 if __name__ == "__main__":
     print("Mentor AI server starting...")
     app.run(host="127.0.0.1", port=8000)
+

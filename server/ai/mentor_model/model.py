@@ -103,7 +103,7 @@ def recommend_mentors(student_skills, mentors, limit=50, min_score=0.0):
         key=lambda x: (
             x["skill_match_count"],
             x["score"],
-            x["experience"]
+            x["experience"] or ""  # Treat None as empty string for sorting
         ),
         reverse=True
     )
