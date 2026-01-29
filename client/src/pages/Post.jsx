@@ -14,6 +14,19 @@ import {
 } from "react-icons/fa";
 import axios from "axios";
 
+// Helper function to get random avatar
+const getRandomAvatar = () => {
+  const avatars = [
+    assets.person1,
+    assets.person2,
+    assets.person3,
+    assets.person4,
+    assets.person5,
+    assets.person6,
+  ];
+  return avatars[Math.floor(Math.random() * avatars.length)];
+};
+
 const Post = () => {
   const [activeTab, setActiveTab] = useState("recommendations");
   const navigate = useNavigate();
@@ -90,7 +103,7 @@ const Post = () => {
 
           // Track connected mentor names
           const connectedNames = new Set(
-            response.connections.map((c) => c.mentor_name),
+            response.connections.map((c) => c.mentor_name)
           );
           setConnectedMentorNames(connectedNames);
         }
@@ -103,34 +116,12 @@ const Post = () => {
   }, [user]);
 
   useEffect(() => {
-    const fetchMyApplications = async () => {
-      if (!user) return;
-
-      try {
-        setLoadingApplications(true);
-        const res = await jobsAPI.getMyApplications();
-        if (res.success) {
-          setMyApplications(res.data || res.applications || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch applications:", err);
-      } finally {
-        setLoadingApplications(false);
-      }
-    };
-
-    if (activeTab === "jobpost") {
-      fetchMyApplications();
-    }
-  }, [user, activeTab]);
-
-  useEffect(() => {
     const fetchStudentRequests = async () => {
-      if (!user) return;
+      if (!user || user.role !== "alumni") return;
 
       try {
         setLoadingStudentRequests(true);
-        const res = await connectionsAPI.getPendingRequests();
+        const res = await connectionsAPI.getStudentRequests();
         if (res.success) {
           setStudentRequests(res.requests);
         }
@@ -141,10 +132,8 @@ const Post = () => {
       }
     };
 
-    if (activeTab === 'connections') {
-      fetchStudentRequests();
-    }
-  }, [user, activeTab]);
+    fetchStudentRequests();
+  }, [user]);
 
   // Fetch mentors from AI model
   useEffect(() => {
@@ -163,7 +152,7 @@ const Post = () => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
 
         console.log("✅ Mentor API raw data:", res.data);
@@ -172,21 +161,24 @@ const Post = () => {
           id: m.id || index,
           name: m.name,
           skill: m.skills.join(", "),
-          match: Math.round((m.score ?? 0) * 100),
-          avatar: m.profile_image || assets.person1, // ✅ REAL PHOTO
+          match: Math.round((m.score || 0.5) * 100),
+          avatar: getRandomAvatar(),
         }));
 
         setRecommendedMentors(formatted);
       } catch (err) {
         console.error(
           "❌ Mentor fetch error:",
-          err.response?.data || err.message,
+          err.response?.data || err.message
         );
       }
     };
 
     fetchMentors();
   }, []);
+
+
+
 
   const handleConnect = async (mentor) => {
     try {
@@ -196,16 +188,8 @@ const Post = () => {
         return;
       }
 
-      // Prevent self-connection
-      if (mentor.id === user.id || mentor.id === user.user_id || mentor.id === user.student_id) {
-        alert("You cannot connect with yourself");
-        return;
-      }
-
-      // Create connection request
+      // Save connection to database
       const response = await connectionsAPI.create({
-        receiver_id: mentor.id,
-        receiver_name: mentor.name,
         mentor_name: mentor.name,
         mentor_skill: mentor.skill,
         mentor_avatar: mentor.avatar,
@@ -220,7 +204,20 @@ const Post = () => {
         // Remove from recommendations
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
 
-        alert(`Connection request sent to ${mentor.name}!`);
+        // Optionally add to connections immediately
+        setConnections((prev) => [
+          {
+            id: response.connection.connection_id,
+            name: mentor.name,
+            skill: mentor.skill,
+            avatar: mentor.avatar,
+            match: mentor.match,
+          },
+          ...prev,
+        ]);
+
+        alert(`Successfully connected with ${mentor.name}!`);
+        setActiveTab("connections");
       }
     } catch (error) {
       console.error("Failed to connect:", error);
@@ -230,10 +227,8 @@ const Post = () => {
         alert("You are already connected with this mentor");
         setConnectedMentorNames((prev) => new Set([...prev, mentor.name]));
         setRecommendedMentors((prev) => prev.filter((m) => m.id !== mentor.id));
-      } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
       } else {
-        alert("Failed to send connection request. Please try again.");
+        alert("Failed to connect with mentor. Please try again.");
       }
     }
   };
@@ -242,18 +237,7 @@ const Post = () => {
       const res = await connectionsAPI.acceptRequest(requestId);
       if (res.success) {
         setStudentRequests(prev => prev.filter(r => r.request_id !== requestId));
-        // Refresh connections list
-        const response = await connectionsAPI.getAll();
-        if (response.success) {
-          const formattedConnections = response.connections.map((conn) => ({
-            id: conn.connection_id,
-            name: conn.mentor_name,
-            skill: conn.mentor_skill,
-            avatar: conn.mentor_avatar || assets.person1,
-            match: conn.match_score,
-          }));
-          setConnections(formattedConnections);
-        }
+        fetchConnections(); // refresh mentor list
         alert("Connection accepted!");
       }
     } catch (err) {
@@ -266,9 +250,7 @@ const Post = () => {
     try {
       const res = await connectionsAPI.rejectRequest(requestId);
       if (res.success) {
-        setStudentRequests((prev) =>
-          prev.filter((r) => r.request_id !== requestId),
-        );
+        setStudentRequests(prev => prev.filter(r => r.request_id !== requestId));
         alert("Request rejected");
       }
     } catch (err) {
@@ -276,6 +258,7 @@ const Post = () => {
       alert("Failed to reject request");
     }
   };
+
 
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -415,7 +398,7 @@ const Post = () => {
           setTempImageFile(null);
         },
         tempImageFile.type,
-        0.9,
+        0.9
       );
     };
   };
@@ -507,8 +490,8 @@ const Post = () => {
           prev.map((post) =>
             post.post_id === postId
               ? { ...post, comments_count: post.comments_count + 1 }
-              : post,
-          ),
+              : post
+          )
         );
 
         setCommentText((prev) => ({ ...prev, [postId]: "" }));
@@ -645,9 +628,7 @@ const Post = () => {
     } catch (error) {
       console.error("Failed to delete job:", error);
       const errorMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to delete job";
+        error.response?.data?.message || error.message || "Failed to delete job";
       alert(errorMsg);
     }
   };
@@ -663,7 +644,7 @@ const Post = () => {
 
       if (response.success) {
         setMyJobRequests((prev) =>
-          prev.filter((req) => req.request_id !== requestId),
+          prev.filter((req) => req.request_id !== requestId)
         );
         alert("Job request deleted successfully!");
       }
@@ -731,11 +712,7 @@ const Post = () => {
     console.log("User role:", user?.role);
     console.log("Token in localStorage:", localStorage.getItem("token"));
 
-    if (
-      !jobFormData.title ||
-      !jobFormData.company ||
-      !jobFormData.description
-    ) {
+    if (!jobFormData.title || !jobFormData.company || !jobFormData.description) {
       alert("Please fill in title, company, and description.");
       return;
     }
@@ -819,8 +796,8 @@ const Post = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`capitalize px-4 py-2 rounded-md font-medium transition-colors duration-200 ${activeTab === tab
-                  ? "bg-[#C5B239] text-black"
-                  : "text-gray-400 hover:text-[#C5B239]"
+                ? "bg-[#C5B239] text-black"
+                : "text-gray-400 hover:text-[#C5B239]"
                 }`}
             >
               {tab === "jobpost" ? "Job Post" : tab}
@@ -904,7 +881,8 @@ const Post = () => {
           {/* Connections */}
           {activeTab === "connections" && (
             <div className="flex gap-6">
-              {/* LEFT: Main Connections List */}
+
+              {/* LEFT: Main Connections List (UNCHANGED CODE MOVED HERE) */}
               <div className="flex-1 space-y-4">
                 <h2 className="text-xl font-semibold text-[#C5B239]">
                   Your Connections
@@ -963,11 +941,11 @@ const Post = () => {
                 )}
               </div>
 
-              {/* RIGHT: Connection Requests Sidebar (FOR ALL USERS) */}
-              {user && (
+              {/* RIGHT: Student Requests Sidebar (ALUMNI ONLY) */}
+              {user?.role === "alumni" && (
                 <div className="w-80 bg-[#1a1a1a] p-4 rounded-xl border border-gray-700 h-fit sticky top-24">
                   <h3 className="text-lg font-semibold text-[#C5B239] mb-3">
-                    Connection Requests
+                    Student Connection Requests
                   </h3>
 
                   {loadingStudentRequests ? (
@@ -985,7 +963,7 @@ const Post = () => {
                             {req.student_name}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {req.student_role === 'student' ? 'Student' : 'Alumni'}
+                            {req.student_skill || "Student"}
                           </p>
 
                           <div className="flex gap-2 mt-2">
@@ -1015,9 +993,7 @@ const Post = () => {
           {/* Feed */}
           {activeTab === "feed" && (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold mb-2 text-[#C5B239]">
-                Feed
-              </h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#C5B239]">Feed</h2>
 
               {/* 🔹 Create Post */}
               <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-md space-y-3">
@@ -1196,8 +1172,7 @@ const Post = () => {
                         className={`${post.is_liked ? "text-[#C5B239]" : "text-gray-400"
                           } hover:text-[#C5B239] text-sm transition`}
                       >
-                        👍 {post.is_liked ? "Liked" : "Like"} (
-                        {post.likes_count})
+                        👍 {post.is_liked ? "Liked" : "Like"} ({post.likes_count})
                       </button>
 
                       <button
@@ -1259,7 +1234,7 @@ const Post = () => {
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {new Date(
-                                      comment.created_at,
+                                      comment.created_at
                                     ).toLocaleDateString()}
                                   </span>
                                 </div>
@@ -1293,17 +1268,19 @@ const Post = () => {
           {/* Job Post */}
           {activeTab === "jobpost" && (
             <div className="flex gap-6">
-{/* LEFT: Existing Job Content */}
-<div className="flex-1 space-y-6">
-  {/* Alumni: My Pending Job Requests */}
-  {user?.role === "alumni" && (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-[#C5B239]">
-        My Pending Job Requests
-      </h2>
-      <p className="text-gray-400 text-sm">
-        Jobs you've requested that are awaiting admin approval
-      </p>
+
+              {/* LEFT: Existing Job Content */}
+              <div className="flex-1 space-y-6">
+
+                {/* Alumni: My Pending Job Requests */}
+                {user?.role === "alumni" && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold text-[#C5B239]">
+                      My Pending Job Requests
+                    </h2>
+                    <p className="text-gray-400 text-sm">
+                      Jobs you've requested that are awaiting admin approval
+                    </p>
 
                     {loadingRequests ? (
                       <div className="text-center text-gray-400 py-8">
@@ -1339,10 +1316,10 @@ const Post = () => {
                                   )}
                                   <span
                                     className={`px-2 py-1 rounded text-xs ${request.status === "pending"
-                                        ? "bg-yellow-500/20 text-yellow-500"
-                                        : request.status === "approved"
-                                          ? "bg-green-500/20 text-green-500"
-                                          : "bg-red-500/20 text-red-500"
+                                      ? "bg-yellow-500/20 text-yellow-500"
+                                      : request.status === "approved"
+                                        ? "bg-green-500/20 text-green-500"
+                                        : "bg-red-500/20 text-red-500"
                                       }`}
                                   >
                                     {request.status.toUpperCase()}
@@ -1458,6 +1435,7 @@ const Post = () => {
                               </div>
                             )}
                           </div>
+
                           <div className="flex gap-2 ml-4">
                             {/* Delete button - Admin can delete any job */}
                             {user && user.role === "admin" && (
@@ -1490,6 +1468,8 @@ const Post = () => {
 
               </div> {/* END LEFT COLUMN */}
 
+
+
               {/* RIGHT SIDEBAR: My Applications */}
               {user && (user.role === "student" || user.role === "alumni") && (
                 <div className="w-80 bg-[#1a1a1a] p-4 rounded-xl border border-gray-700 h-fit sticky top-24">
@@ -1515,10 +1495,10 @@ const Post = () => {
 
                           <span
                             className={`inline-block mt-1 px-2 py-0.5 text-xs rounded ${app.status === "pending"
-                                ? "bg-yellow-500/20 text-yellow-400"
-                                : app.status === "accepted"
-                                  ? "bg-green-500/20 text-green-400"
-                                  : "bg-red-500/20 text-red-400"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : app.status === "accepted"
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
                               }`}
                           >
                             {app.status?.toUpperCase()}
@@ -1608,10 +1588,7 @@ const Post = () => {
                   type="email"
                   value={applicationData.email}
                   onChange={(e) =>
-                    setApplicationData({
-                      ...applicationData,
-                      email: e.target.value,
-                    })
+                    setApplicationData({ ...applicationData, email: e.target.value })
                   }
                   className="w-full bg-[#111] p-3 rounded-md text-white outline-none"
                   required
@@ -1958,7 +1935,9 @@ const Post = () => {
                     max="2"
                     step="0.1"
                     value={imageZoom}
-                    onChange={(e) => setImageZoom(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setImageZoom(parseFloat(e.target.value))
+                    }
                     className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     style={{
                       background: `linear-gradient(to right, #C5B239 0%, #C5B239 ${((imageZoom - 0.5) / 1.5) * 100
