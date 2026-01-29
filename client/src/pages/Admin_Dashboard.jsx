@@ -30,13 +30,13 @@ const Admin_Dashboard = () => {
 
   // Chart configurations
   const usersByRoleChart = useMemo(() => {
-    const data = stats.usersByRole.length > 0 
-      ? stats.usersByRole 
+    const data = stats.usersByRole.length > 0
+      ? stats.usersByRole
       : [
-          { role: 'Students', count: stats.totalStudents },
-          { role: 'Alumni', count: stats.totalAlumni }
-        ];
-    
+        { role: 'Students', count: stats.totalStudents },
+        { role: 'Alumni', count: stats.totalAlumni }
+      ];
+
     return {
       labels: data.map(d => d.role || 'Unknown'),
       datasets: [{
@@ -51,7 +51,7 @@ const Admin_Dashboard = () => {
 
   const alumniVerificationChart = useMemo(() => {
     let data = stats.alumniVerificationStatus;
-    
+
     // If no verification data, use safe defaults
     if (!data || data.length === 0) {
       data = [
@@ -60,7 +60,7 @@ const Admin_Dashboard = () => {
         { status: 'Rejected', count: 0 }
       ];
     }
-    
+
     return {
       labels: data.map(d => d.status || 'Unknown'),
       datasets: [{
@@ -75,11 +75,11 @@ const Admin_Dashboard = () => {
 
   const studentSkillsChart = useMemo(() => {
     const data = stats.studentSkills;
-    
+
     if (!data || data.length === 0) {
       return null; // Will show "No data available"
     }
-    
+
     return {
       labels: data.map(d => d.skill || 'Other'),
       datasets: [{
@@ -198,7 +198,7 @@ const Admin_Dashboard = () => {
                   <FaDonate className="text-purple-400 text-xl" />
                 </div>
                 <p className="text-3xl font-bold text-white">{stats.numberOfDonations}</p>
-                <p className="text-xs text-gray-500 mt-1">Coming soon</p>
+                <p className="text-xs text-gray-500 mt-1">Total Donations</p>
               </div>
             </div>
 
