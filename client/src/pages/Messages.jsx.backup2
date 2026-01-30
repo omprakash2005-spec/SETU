@@ -211,6 +211,28 @@ const Messages = () => {
       event.target.value = ''; // Reset file input
     }
   };
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      await messagesAPI.deleteMessage(messageId);
+      setMessages(messages.filter(msg => msg.message_id !== messageId));
+      setContextMenu(null);
+    } catch (error) {
+      console.error('Delete message error:', error);
+      alert('Failed to delete message');
+    }
+  };
+
+  const handleReplyMessage = (messageId) => {
+    const msg = messages.find(m => m.message_id === messageId);
+    if (msg && msg.content) {
+      setInput(`Replying to: "${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}" - `);
+    }
+    setContextMenu(null);
+  };
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';

@@ -24,7 +24,13 @@ export const recommendMentors = async (req, res) => {
         ? JSON.parse(userResult.rows[0].skills)
         : userResult.rows[0].skills || [];
 
-    const userSkills = userSkillsArray.join(" ");
+    const userSkills = userSkillsArray
+      .flatMap(s =>
+        typeof s === "string"
+          ? s.split(",").map(x => x.trim().toLowerCase())
+          : []
+      );
+
     console.log("User skills:", userSkills);
 
     // 2️⃣ Decide recommendation type
@@ -51,13 +57,18 @@ export const recommendMentors = async (req, res) => {
       id: m.id,
       name: m.name,
       email: m.email,
-      skills:
-        typeof m.skills === "string" ? JSON.parse(m.skills) : m.skills || [],
-      experience: Array.isArray(m.experience) ? m.experience.join(", ") : (m.experience || null),
-      profile_image: m.profile_image || null, // ✅ ADD THIS
+      skills: Array.isArray(m.skills)
+        ? m.skills.flatMap(s =>
+          typeof s === "string"
+            ? s.split(",").map(x => x.trim().toLowerCase())
+            : []
+        )
+        : typeof m.skills === "string"
+          ? m.skills.split(",").map(x => x.trim().toLowerCase())
+          : [],
+      experience: m.experience || 0,
+      profile_image: m.profile_image || null,
     }));
-
-    console.log("Mentors sent to AI:", mentors.length);
 
     // 4️⃣ Call AI
     const aiResponse = await axios.post(

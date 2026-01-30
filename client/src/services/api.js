@@ -390,4 +390,71 @@ export const connectionsAPI = {
   },
 };
 
+// Messaging API calls
+export const messagesAPI = {
+  // Get all conversations for current user
+  getConversations: async () => {
+    const response = await api.get('/messages/conversations');
+    return response.data;
+  },
+
+  // Get or create conversation with specific user
+  getOrCreateConversation: async (receiverId) => {
+    const response = await api.get(`/messages/conversations/${receiverId}`);
+    return response.data;
+  },
+
+  // Get chat history (paginated)
+  getChatHistory: async (receiverId, params = { limit: 50, offset: 0 }) => {
+    const response = await api.get(`/messages/conversations/${receiverId}/messages`, { params });
+    return response.data;
+  },
+
+  // Send text message
+  sendTextMessage: async (receiverId, content) => {
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/text`, {
+      content,
+    });
+    return response.data;
+  },
+
+  // Send file message
+  sendFileMessage: async (receiverId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Send voice message
+  sendVoiceMessage: async (receiverId, audioFile) => {
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/voice`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Mark messages as read
+  markAsRead: async (receiverId, messageIds) => {
+    const response = await api.put(`/messages/conversations/${receiverId}/messages/read`, {
+      message_ids: messageIds,
+    });
+    return response.data;
+  },
+
+  // Delete a message
+  deleteMessage: async (messageId) => {
+    const response = await api.delete(`/messages/${messageId}`);
+    return response.data;
+  },
+};
+
 export default api;

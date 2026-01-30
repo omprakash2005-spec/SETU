@@ -121,8 +121,9 @@ export const getConnections = async (req, res) => {
           WHEN mc.requester_id = $1 THEN mc.receiver_name
           ELSE mc.requester_name
         END as mentor_name,
-        mc.mentor_skill,
+        u.skills as mentor_skill,
         u.profile_image as mentor_avatar,
+        u.role as mentor_role,
         mc.match_score,
         mc.mentor_identifier,
         mc.created_at

@@ -1,4 +1,3 @@
-import re
 import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -8,22 +7,39 @@ from sklearn.metrics.pairwise import cosine_similarity
 def normalize(text):
     if not text:
         return set()
-    return set(re.findall(r"[a-zA-Z]+", text.lower()))
+
+    text = text.lower()
+
+    replacements = {
+        "c++": "cplusplus",
+        "c#": "csharp",
+        ".net": "dotnet"
+    }
+
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+
+    return set(text.replace(",", " ").split())
+
 
 def parse_skills(skills):
+    def clean(s):
+        s = s.lower().strip()
+        s = s.replace("c++", "cplusplus")
+        s = s.replace("c#", "csharp")
+        s = s.replace(".net", "dotnet")
+        return s
+
     if isinstance(skills, list):
-        final = []
+        result = []
         for s in skills:
             if isinstance(s, str) and "," in s:
-                final.extend([x.strip().lower() for x in s.split(",")])
+                result.extend([clean(x) for x in s.split(",")])
             elif isinstance(s, str):
-                final.append(s.strip().lower())
-        return final
+                result.append(clean(s))
+        return result
 
     if isinstance(skills, str):
-        skills = skills.strip()
-
-        # Try JSON
         try:
             parsed = json.loads(skills)
             if isinstance(parsed, list):
@@ -31,8 +47,7 @@ def parse_skills(skills):
         except Exception:
             pass
 
-        # Comma-separated fallback
-        return [s.strip().lower() for s in skills.split(",")]
+        return [clean(s) for s in skills.split(",")]
 
     return []
 
@@ -44,6 +59,7 @@ def count_skill_overlap(student_skills, mentor_skills):
         )
     )
 
+
 def matched_skills(student_skills, mentor_skills):
     return list(
         normalize(student_skills).intersection(
@@ -52,23 +68,47 @@ def matched_skills(student_skills, mentor_skills):
     )
 
 # ---------- Main Function ----------
+def parse_experience(exp):
+    """
+    Converts experience into a numeric value (years).
+    """
+    if isinstance(exp, int) or isinstance(exp, float):
+        return exp
+
+    if isinstance(exp, list) and exp:
+        exp = exp[0]
+
+    if isinstance(exp, str):
+        digits = "".join(ch for ch in exp if ch.isdigit())
+        return int(digits) if digits else 0
+
+    return 0
 
 def recommend_mentors(student_skills, mentors, limit=50, min_score=0.0):
+
+    # ✅ Normalize student skills safely
+    if isinstance(student_skills, str):
+        student_skills = student_skills.split(",")
+
+    student_skills_text = " ".join(parse_skills(student_skills))
+    
+    # Calculate total number of unique student skills
+    student_skills_set = normalize(student_skills_text)
+    total_student_skills = len(student_skills_set) if student_skills_set else 1
+
     if not mentors:
         return []
 
-    # Normalize student skills
-    student_skills = " ".join(parse_skills(student_skills))
-
-    # Prepare mentor texts
+    # ✅ Prepare mentor texts
     mentor_texts = [
         " ".join(parse_skills(m.get("skills", [])))
         for m in mentors
     ]
 
-    vectorizer = TfidfVectorizer()
+    vectorizer = TfidfVectorizer(token_pattern=r'(?u)\b\w+\b')
+
     mentor_vectors = vectorizer.fit_transform(mentor_texts)
-    student_vector = vectorizer.transform([student_skills])
+    student_vector = vectorizer.transform([student_skills_text])
 
     similarity_scores = cosine_similarity(
         student_vector, mentor_vectors
@@ -80,22 +120,27 @@ def recommend_mentors(student_skills, mentors, limit=50, min_score=0.0):
         mentor_skills = parse_skills(mentor.get("skills", []))
 
         skill_match_count = count_skill_overlap(
-            student_skills, mentor_skills
+            student_skills_text, mentor_skills
         )
+        
+        # Calculate match percentage based on skill overlap
+        match_percentage = round((skill_match_count / total_student_skills) * 100)
+        print(f"🔢 Mentor {mentor.get('name')}: skill_match_count={skill_match_count}, total_student_skills={total_student_skills}, match_percentage={match_percentage}%")
 
         if similarity_scores[idx] >= min_score:
-
             results.append({
                 "id": mentor.get("id"),
                 "name": mentor.get("name"),
                 "email": mentor.get("email"),
                 "skills": mentor_skills,
-                "experience": mentor.get("experience", 0),
-                "profile_image": mentor.get("profile_image"),  # ✅ ADD THIS LINE
+                "experience": parse_experience(mentor.get("experience")),
+
+                "profile_image": mentor.get("profile_image"),
                 "score": float(similarity_scores[idx]),
                 "skill_match_count": skill_match_count,
+                "match_percentage": match_percentage,
                 "matched_skills": matched_skills(
-                    student_skills, mentor_skills
+                    student_skills_text, mentor_skills
                 )
             })
 

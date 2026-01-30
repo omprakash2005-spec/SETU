@@ -12,6 +12,7 @@ import postRoutes from './routes/postRoutes.js';
 import connectionRoutes from './routes/connectionRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import locationRoutes from './routes/locationRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import pool from './config/database.js';
 import { patchEventsTable } from "./config/patchEventsTable.js";
@@ -20,6 +21,7 @@ import { initStudentsDatabase } from './config/initStudentsDatabase.js';
 import { initConnectionsDatabase } from './config/initConnectionsDatabase.js';
 import { initDonationsDatabase } from './config/initDonationsDatabase.js';
 import { initLocationsDatabase } from './config/initLocationsDatabase.js';
+import { initMessagingDatabase } from './config/initMessagingDatabase.js';
 
 // Load environment variables
 dotenv.config();
@@ -69,6 +71,7 @@ app.get('/', (req, res) => {
       events: '/api/events',
       jobs: '/api/jobs',
       posts: '/api/posts',
+      messages: '/api/messages',
     },
   });
 });
@@ -92,6 +95,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);
@@ -106,6 +110,7 @@ const startServer = async () => {
     await initDonationsDatabase();
     await initConnectionsDatabase();
     await initLocationsDatabase();
+    await initMessagingDatabase();
 
     app.listen(PORT, () => {
       console.log(`
