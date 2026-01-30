@@ -99,11 +99,31 @@ def recommend_mentors(student_skills, mentors, limit=50, min_score=0.0):
                 )
             })
 
+    # Helper to safely extract numeric experience
+    def get_experience_value(exp):
+        if exp is None:
+            return 0
+        if isinstance(exp, (int, float)):
+            return exp
+        if isinstance(exp, list):
+            # If it's a list, try to get the first numeric element
+            for item in exp:
+                if isinstance(item, (int, float)):
+                    return item
+            return 0
+        if isinstance(exp, str):
+            # Try to extract a number from string
+            try:
+                return int(exp)
+            except (ValueError, TypeError):
+                return 0
+        return 0
+    
     results.sort(
         key=lambda x: (
             x["skill_match_count"],
             x["score"],
-            x["experience"] or ""  # Treat None as empty string for sorting
+            get_experience_value(x["experience"])
         ),
         reverse=True
     )
