@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5001/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -69,6 +69,18 @@ export const authAPI = {
     const response = await api.put('/auth/profile', profileData);
     return response.data;
   },
+
+  // Upload profile picture
+  uploadProfilePicture: async (imageFile) => {
+    const formData = new FormData();
+    formData.append('profile_picture', imageFile);
+    const response = await api.post('/auth/profile/upload-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Admin API calls
@@ -94,6 +106,51 @@ export const adminAPI = {
   // Create new admin
   createAdmin: async (adminData) => {
     const response = await api.post('/admin/create', adminData);
+    return response.data;
+  },
+
+  // Get directory (alumni and students)
+  getDirectory: async (params = {}) => {
+    const response = await api.get('/admin/directory', { params });
+    return response.data;
+  },
+
+  // Export directory as CSV
+  exportDirectoryCSV: async () => {
+    const response = await api.get('/admin/directory/export/csv', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Export directory as Excel
+  exportDirectoryExcel: async () => {
+    const response = await api.get('/admin/directory/export/excel', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Export directory as PDF
+  exportDirectoryPDF: async () => {
+    const response = await api.get('/admin/directory/export/pdf', {
+      responseType: 'blob',
+    });
+    return {
+      blob: response.data,
+      headers: response.headers,
+    };
+  },
+
+  // Import directory from CSV
+  importDirectoryCSV: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/admin/directory/import/csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };
@@ -194,7 +251,17 @@ export const jobsAPI = {
     });
     return response.data;
   },
+  // Delete job (admin can delete any, alumni cannot delete approved jobs)
+  deleteJob: async (jobId) => {
+    const response = await api.delete(`/jobs/${jobId}`);
+    return response.data;
+  },
 
+  // Delete pending job request (alumni - own pending requests)
+  deletePendingRequest: async (requestId) => {
+    const response = await api.delete(`/jobs/pending/request/${requestId}`);
+    return response.data;
+  },
   // Get my applications (students and alumni)
   getMyApplications: async () => {
     const response = await api.get('/jobs/my/applications');
@@ -274,6 +341,118 @@ export const postsAPI = {
     const response = await api.post(`/posts/${postId}/comments`, {
       comment_text: commentText,
     });
+    return response.data;
+  },
+};
+
+// Connection API calls
+export const connectionsAPI = {
+  // Create new connection request
+  create: async (connectionData) => {
+    const response = await api.post('/connections', connectionData);
+    return response.data;
+  },
+
+  // Get all accepted connections for current user
+  getAll: async () => {
+    const response = await api.get('/connections');
+    return response.data;
+  },
+
+  // Get pending connection requests (incoming)
+  getPendingRequests: async () => {
+    const response = await api.get('/connections/requests/pending');
+    return response.data;
+  },
+
+  // Accept a connection request
+  acceptRequest: async (requestId) => {
+    const response = await api.post(`/connections/accept/${requestId}`);
+    return response.data;
+  },
+
+  // Reject a connection request
+  rejectRequest: async (requestId) => {
+    const response = await api.post(`/connections/reject/${requestId}`);
+    return response.data;
+  },
+
+  // Check if connected with specific mentor
+  check: async (mentorName) => {
+    const response = await api.get(`/connections/check/${encodeURIComponent(mentorName)}`);
+    return response.data;
+  },
+
+  // Delete connection
+  delete: async (connectionId) => {
+    const response = await api.delete(`/connections/${connectionId}`);
+    return response.data;
+  },
+};
+
+// Messaging API calls
+export const messagesAPI = {
+  // Get all conversations for current user
+  getConversations: async () => {
+    const response = await api.get('/messages/conversations');
+    return response.data;
+  },
+
+  // Get or create conversation with specific user
+  getOrCreateConversation: async (receiverId) => {
+    const response = await api.get(`/messages/conversations/${receiverId}`);
+    return response.data;
+  },
+
+  // Get chat history (paginated)
+  getChatHistory: async (receiverId, params = { limit: 50, offset: 0 }) => {
+    const response = await api.get(`/messages/conversations/${receiverId}/messages`, { params });
+    return response.data;
+  },
+
+  // Send text message
+  sendTextMessage: async (receiverId, content) => {
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/text`, {
+      content,
+    });
+    return response.data;
+  },
+
+  // Send file message
+  sendFileMessage: async (receiverId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Send voice message
+  sendVoiceMessage: async (receiverId, audioFile) => {
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+    const response = await api.post(`/messages/conversations/${receiverId}/messages/voice`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Mark messages as read
+  markAsRead: async (receiverId, messageIds) => {
+    const response = await api.put(`/messages/conversations/${receiverId}/messages/read`, {
+      message_ids: messageIds,
+    });
+    return response.data;
+  },
+
+  // Delete a message
+  deleteMessage: async (messageId) => {
+    const response = await api.delete(`/messages/${messageId}`);
     return response.data;
   },
 };

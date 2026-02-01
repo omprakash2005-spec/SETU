@@ -48,7 +48,7 @@ export const createPost = async (req, res) => {
       }
     }
 
-    // Insert post into database
+    // Insert post into database and fetch author details
     const result = await pool.query(
       `INSERT INTO posts (user_id, user_role, content, image_url)
        VALUES ($1, $2, $3, $4)
@@ -58,11 +58,21 @@ export const createPost = async (req, res) => {
 
     const post = result.rows[0];
 
+    // Fetch author details
+    const authorResult = await pool.query(
+      'SELECT name, profile_image FROM users WHERE id = $1',
+      [userId]
+    );
+
+    const author = authorResult.rows[0] || {};
+
     res.status(201).json({
       success: true,
       message: 'Post created successfully',
       post: {
         ...post,
+        author_name: author.name || null,
+        author_avatar: author.profile_image || null,
         likes_count: 0,
         comments_count: 0,
         is_liked: false,
@@ -96,7 +106,7 @@ export const getPosts = async (req, res) => {
       });
     }
 
-    // Get posts with likes/comments counts and user's like status
+    // Get posts with likes/comments counts, user's like status, and author profile info
     const result = await pool.query(
       `SELECT 
         p.post_id,
@@ -105,6 +115,8 @@ export const getPosts = async (req, res) => {
         p.content,
         p.image_url,
         p.created_at,
+        u.name AS author_name,
+        u.profile_image AS author_avatar,
         COALESCE(COUNT(DISTINCT pl.like_id), 0)::int AS likes_count,
         COALESCE(COUNT(DISTINCT pc.comment_id), 0)::int AS comments_count,
         EXISTS(
@@ -112,9 +124,10 @@ export const getPosts = async (req, res) => {
           WHERE post_id = p.post_id AND user_id = $1
         ) AS is_liked
        FROM posts p
+       LEFT JOIN users u ON p.user_id = u.id
        LEFT JOIN post_likes pl ON p.post_id = pl.post_id
        LEFT JOIN post_comments pc ON p.post_id = pc.post_id
-       GROUP BY p.post_id
+       GROUP BY p.post_id, u.name, u.profile_image
        ORDER BY p.created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]

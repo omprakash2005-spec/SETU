@@ -1,63 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import Navbar from '../components/Navbar';
-import { jobsAPI } from '../services/api';
-import { FaTimes, FaCheck, FaBriefcase, FaBuilding, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { FaUsers, FaUserGraduate, FaCalendar, FaDonate, FaSync } from 'react-icons/fa';
+import { Doughnut, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import useDashboardStats from '../hooks/useDashboardStats';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Admin_Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("pending-jobs");
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState("");
+  // Use custom hook for real-time dashboard stats (refreshes every 30 seconds)
+  const { stats, loading, error, refresh } = useDashboardStats(30000);
 
-  useEffect(() => {
-    if (activeTab === "pending-jobs") {
-      fetchPendingRequests();
+  // Chart configurations
+  const usersByRoleChart = useMemo(() => {
+    const data = stats.usersByRole.length > 0
+      ? stats.usersByRole
+      : [
+        { role: 'Students', count: stats.totalStudents },
+        { role: 'Alumni', count: stats.totalAlumni }
+      ];
+
+    return {
+      labels: data.map(d => d.role || 'Unknown'),
+      datasets: [{
+        label: 'Users',
+        data: data.map(d => d.count || 0),
+        backgroundColor: ['#3B82F6', '#8B5CF6', '#EC4899'],
+        borderColor: ['#2563EB', '#7C3AED', '#DB2777'],
+        borderWidth: 2
+      }]
+    };
+  }, [stats.usersByRole, stats.totalStudents, stats.totalAlumni]);
+
+  const alumniVerificationChart = useMemo(() => {
+    let data = stats.alumniVerificationStatus;
+
+    // If no verification data, use safe defaults
+    if (!data || data.length === 0) {
+      data = [
+        { status: 'Verified', count: 0 },
+        { status: 'Pending', count: stats.totalAlumni },
+        { status: 'Rejected', count: 0 }
+      ];
     }
-  }, [activeTab]);
 
-  const fetchPendingRequests = async () => {
-    try {
-      setLoading(true);
-      const response = await jobsAPI.getPendingRequests();
-      if (response.success) {
-        setPendingRequests(response.data);
+    return {
+      labels: data.map(d => d.status || 'Unknown'),
+      datasets: [{
+        label: 'Alumni',
+        data: data.map(d => d.count || 0),
+        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+        borderColor: ['#059669', '#D97706', '#DC2626'],
+        borderWidth: 2
+      }]
+    };
+  }, [stats.alumniVerificationStatus, stats.totalAlumni]);
+
+  const studentSkillsChart = useMemo(() => {
+    const data = stats.studentSkills;
+
+    if (!data || data.length === 0) {
+      return null; // Will show "No data available"
+    }
+
+    return {
+      labels: data.map(d => d.skill || 'Other'),
+      datasets: [{
+        label: 'Students',
+        data: data.map(d => d.count || 0),
+        backgroundColor: '#6366F1',
+        borderColor: '#4F46E5',
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    };
+  }, [stats.studentSkills]);
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#9CA3AF',
+          font: { size: 11 },
+          padding: 15
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+        titleColor: '#F3F4F6',
+        bodyColor: '#E5E7EB',
+        borderColor: 'rgba(99, 102, 241, 0.5)',
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 8
       }
-    } catch (err) {
-      console.error("Error fetching pending requests:", err);
-      alert("Failed to load pending job requests.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleApprove = async (requestId) => {
-    if (!confirm("Are you sure you want to approve this job request?")) return;
-
-    try {
-      const response = await jobsAPI.approveRequest(requestId);
-      if (response.success) {
-        alert("Job request approved and published successfully!");
-        fetchPendingRequests(); // Refresh the list
+  const barChartOptions = {
+    ...chartOptions,
+    scales: {
+      x: {
+        ticks: { color: '#9CA3AF', font: { size: 10 } },
+        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+      },
+      y: {
+        ticks: { color: '#9CA3AF', font: { size: 10 } },
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        beginAtZero: true
       }
-    } catch (err) {
-      console.error("Error approving request:", err);
-      alert(err.response?.data?.message || "Failed to approve job request.");
-    }
-  };
-
-  const handleReject = async (requestId) => {
-    try {
-      const response = await jobsAPI.rejectRequest(requestId, rejectionReason);
-      if (response.success) {
-        alert("Job request rejected successfully.");
-        setSelectedRequest(null);
-        setRejectionReason("");
-        fetchPendingRequests(); // Refresh the list
-      }
-    } catch (err) {
-      console.error("Error rejecting request:", err);
-      alert(err.response?.data?.message || "Failed to reject job request.");
     }
   };
 
@@ -65,148 +137,107 @@ const Admin_Dashboard = () => {
     <div>
       <Navbar />
       <div className="pt-24 min-h-screen bg-black text-white p-6">
-        <h1 className="text-3xl font-bold mb-6 text-[#F0D41D]">Admin Dashboard</h1>
-
-        {/* Navigation Tabs */}
-        <div className="flex gap-4 border-b border-gray-700 pb-3 mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-[#F0D41D]">Admin Dashboard</h1>
           <button
-            onClick={() => setActiveTab("pending-jobs")}
-            className={`px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-              activeTab === "pending-jobs"
-                ? "bg-[#F0D41D] text-black"
-                : "text-gray-400 hover:text-[#F0D41D]"
-            }`}
+            onClick={refresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-[#F0D41D] text-black rounded-lg hover:bg-yellow-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Pending Job Requests
+            <FaSync className={loading ? 'animate-spin' : ''} />
+            Refresh
           </button>
-          {/* Add more tabs here as needed */}
         </div>
 
-        {/* Content */}
-        <div className="max-w-6xl mx-auto">
-          {activeTab === "pending-jobs" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-[#F0D41D]">
-                  Job Posting Requests from Alumni
-                </h2>
-                <span className="text-gray-400">
-                  {pendingRequests.length} pending request{pendingRequests.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {loading ? (
-                <div className="text-center text-gray-400 py-8">Loading requests...</div>
-              ) : pendingRequests.length === 0 ? (
-                <div className="bg-gray-800 p-8 rounded-xl text-center text-gray-400">
-                  No pending job requests at the moment.
-                </div>
-              ) : (
-                pendingRequests.map((request) => (
-                  <div
-                    key={request.request_id}
-                    className="bg-gray-800 border border-gray-600 p-6 rounded-xl space-y-3 hover:bg-gray-700 transition-all"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-xl text-[#F0D41D] mb-2 flex items-center gap-2">
-                          <FaBriefcase />
-                          {request.job_title}
-                        </h3>
-                        <div className="flex flex-wrap gap-4 mb-3 text-sm text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <FaBuilding />
-                            {request.company}
-                          </span>
-                          {request.location && (
-                            <span className="flex items-center gap-1">
-                              <FaMapMarkerAlt />
-                              {request.location}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <FaClock />
-                            Submitted: {new Date(request.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-gray-300 mb-3">
-                          {request.description}
-                        </p>
-                        {request.requirements && (
-                          <div className="text-gray-400 text-sm mb-3">
-                            <span className="font-semibold">Requirements:</span> {request.requirements}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-3 border-t border-gray-600">
-                      <button
-                        onClick={() => handleApprove(request.request_id)}
-                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-                      >
-                        <FaCheck />
-                        Approve & Publish
-                      </button>
-                      <button
-                        onClick={() => setSelectedRequest(request.request_id)}
-                        className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-                      >
-                        <FaTimes />
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Rejection Modal */}
-        {selectedRequest && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-            <div className="bg-gray-900 p-8 rounded-xl w-full max-w-md relative">
-              <button
-                onClick={() => {
-                  setSelectedRequest(null);
-                  setRejectionReason("");
-                }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              >
-                <FaTimes />
-              </button>
-              <h2 className="text-white text-2xl font-semibold mb-6">
-                Reject Job Request
-              </h2>
-              <div className="space-y-4">
-                <textarea
-                  placeholder="Reason for rejection (optional)"
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full bg-gray-800 p-3 rounded-md text-white outline-none resize-none"
-                  rows={4}
-                ></textarea>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleReject(selectedRequest)}
-                    className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-md text-white font-semibold transition-colors"
-                  >
-                    Confirm Rejection
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedRequest(null);
-                      setRejectionReason("");
-                    }}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-md text-white font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
+            {error}
           </div>
+        )}
+
+        {/* KPI Cards */}
+        {loading ? (
+          <div className="text-center py-8 text-gray-400">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#F0D41D]"></div>
+            <p className="mt-4">Loading analytics...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl hover:bg-gray-750 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-gray-400 text-sm font-medium">Total Users</h3>
+                  <FaUsers className="text-[#F0D41D] text-xl" />
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.totalUsers}</p>
+                <p className="text-xs text-gray-500 mt-1">Students + Alumni</p>
+              </div>
+
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl hover:bg-gray-750 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-gray-400 text-sm font-medium">Total Alumni</h3>
+                  <FaUserGraduate className="text-blue-400 text-xl" />
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.totalAlumni}</p>
+                <p className="text-xs text-gray-500 mt-1">Alumni accounts</p>
+              </div>
+
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl hover:bg-gray-750 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-gray-400 text-sm font-medium">No. of Events</h3>
+                  <FaCalendar className="text-green-400 text-xl" />
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.numberOfEvents}</p>
+                <p className="text-xs text-gray-500 mt-1">Total events created</p>
+              </div>
+
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl hover:bg-gray-750 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-gray-400 text-sm font-medium">No. of Donations</h3>
+                  <FaDonate className="text-purple-400 text-xl" />
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.numberOfDonations}</p>
+                <p className="text-xs text-gray-500 mt-1">Total Donations</p>
+              </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* Users by Role Chart */}
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-[#F0D41D] mb-4">Users by Role</h3>
+                <div className="h-64 flex items-center justify-center">
+                  <Doughnut data={usersByRoleChart} options={chartOptions} />
+                </div>
+              </div>
+
+              {/* Alumni Verification Status Chart */}
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-[#F0D41D] mb-4">Alumni Verification Status</h3>
+                <div className="h-64 flex items-center justify-center">
+                  <Doughnut data={alumniVerificationChart} options={chartOptions} />
+                </div>
+              </div>
+
+              {/* Student Skills Chart */}
+              <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-[#F0D41D] mb-4">Top Student Skills</h3>
+                <div className="h-64 flex items-center justify-center">
+                  {studentSkillsChart ? (
+                    <Bar data={studentSkillsChart} options={barChartOptions} />
+                  ) : (
+                    <p className="text-gray-500 text-sm">No data available</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Auto-refresh indicator */}
+            <div className="text-center text-gray-500 text-sm">
+              <p>📊 Data refreshes automatically every 30 seconds</p>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -1,56 +1,368 @@
-import React, { useState } from "react";
-import { Smile, Paperclip, Mic } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Smile, Paperclip, Send, FileText, Music, Reply, Trash2 } from "lucide-react";
 import Navbar from "../components/Navbar";
-import { assets } from "../assets/assets";
-
-const users = [
-  { id: 1, name: "Justin Gethje", avatar: assets.person2 },
-  { id: 2, name: "Kiara Kapoor", avatar: assets.person3 },
-  { id: 3, name: "Vineet Arora", avatar: assets.person1 },
-  { id: 4, name: "Henry Cejudo", avatar: assets.person4 },
-  { id: 5, name: "Rahul Taneja", avatar: assets.person5 },
-  { id: 6, name: "Max Holloway", avatar: assets.person6 },
-];
+import { messagesAPI, connectionsAPI } from "../services/api";
+import { useNavigate, useLocation } from "react-router-dom";
+import defaultAvatar from "../assets/profile.jpeg";
 
 const Messages = () => {
-  const [selectedUser, setSelectedUser] = useState(users[5]);
-  const [messages, setMessages] = useState([
-    { from: "me", text: "Hey, how are you?" },
-    { from: "them", text: "I'm good! How about you?" },
-    { from: "me", text: "Doing great, thanks for asking!" },
-  ]);
+  const [connections, setConnections] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null); // { messageId, x, y }
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    setMessages([...messages, { from: "me", text: input }]);
-    setInput("");
+  // Get current user from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user && user.id) {
+      setCurrentUserId(user.id);
+    }
+  }, []);
+
+  // Load connections on mount
+  useEffect(() => {
+    loadConnections();
+  }, []);
+
+  // Handle user selection from URL or location state
+  useEffect(() => {
+    if (location.state?.userId) {
+      // Coming from connections page with specific user
+      const userId = location.state.userId;
+      const userName = location.state.userName;
+      const userAvatar = location.state.userAvatar;
+      const userRole = location.state.userRole;
+
+      // Set selected user immediately
+      setSelectedUser({
+        connection_user_id: userId,
+        other_user_id: userId,
+        other_user_name: userName,
+        other_user_avatar: userAvatar,
+        other_user_role: userRole,
+        unread_count: 0
+      });
+
+      // Save to sessionStorage for persistence
+      sessionStorage.setItem('selectedMessageUser', JSON.stringify({
+        connection_user_id: userId,
+        other_user_id: userId,
+        other_user_name: userName,
+        other_user_avatar: userAvatar,
+        other_user_role: userRole,
+      }));
+    } else {
+      // Check sessionStorage for previously selected user
+      const savedUser = sessionStorage.getItem('selectedMessageUser');
+      if (savedUser) {
+        setSelectedUser(JSON.parse(savedUser));
+      }
+    }
+  }, [location, navigate]);
+
+  // Close context menu when clicking anywhere
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // Load messages when user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      loadMessages(selectedUser.other_user_id || selectedUser.connection_user_id);
+    }
+  }, [selectedUser]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const loadConnections = async () => {
+    try {
+      setLoading(true);
+      // Load accepted connections
+      const response = await connectionsAPI.getAll();
+
+      if (response.connections && response.connections.length > 0) {
+        // Transform connections to match the format we need
+        const formattedConnections = response.connections.map(conn => {
+          console.log('Connection data:', {
+            name: conn.mentor_name,
+            avatar: conn.mentor_avatar,
+            userId: conn.connection_user_id
+          });
+
+          // Capitalize role properly
+          const role = conn.mentor_role ?
+            conn.mentor_role.charAt(0).toUpperCase() + conn.mentor_role.slice(1) :
+            'User';
+
+          return {
+            connection_id: conn.connection_id,
+            connection_user_id: conn.connection_user_id,
+            other_user_id: conn.connection_user_id,
+            other_user_name: conn.mentor_name,
+            other_user_avatar: conn.mentor_avatar || defaultAvatar,
+            other_user_role: role,
+            unread_count: 0, // Will be updated when we load conversations
+            last_message_preview: null,
+            last_message_at: null
+          };
+        });
+
+        setConnections(formattedConnections);
+
+        // Auto-select first connection if no user is selected
+        if (!selectedUser && formattedConnections.length > 0) {
+          const firstConnection = formattedConnections[0];
+          setSelectedUser(firstConnection);
+          sessionStorage.setItem('selectedMessageUser', JSON.stringify(firstConnection));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load connections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMessages = async (receiverId) => {
+    try {
+      const response = await messagesAPI.getChatHistory(receiverId, { limit: 100, offset: 0 });
+      // Reverse to show oldest first
+      setMessages((response.messages || []).reverse());
+
+      // Mark unread messages as read
+      const unreadMessages = response.messages
+        ?.filter(msg => !msg.is_read && msg.sender_id !== currentUserId)
+        .map(msg => msg.message_id);
+
+      if (unreadMessages && unreadMessages.length > 0) {
+        await messagesAPI.markAsRead(receiverId, unreadMessages);
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      // If conversation doesn't exist yet, just show empty messages
+      setMessages([]);
+    }
+  };
+
+  const handleUserSelect = (connection) => {
+    setSelectedUser(connection);
+    sessionStorage.setItem('selectedMessageUser', JSON.stringify(connection));
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || !selectedUser || sending) return;
+
+    try {
+      setSending(true);
+      const receiverId = selectedUser.other_user_id || selectedUser.connection_user_id;
+      const response = await messagesAPI.sendTextMessage(receiverId, input.trim());
+
+      // Add message to local state
+      setMessages([...messages, response.message]);
+      setInput("");
+
+      // Update connection preview
+      loadConnections();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert(error.response?.data?.message || 'Failed to send message. Make sure you are connected with this user.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedUser || sending) return;
+
+    try {
+      setSending(true);
+      const receiverId = selectedUser.other_user_id || selectedUser.connection_user_id;
+      const response = await messagesAPI.sendFileMessage(receiverId, file);
+
+      // Add message to local state
+      setMessages([...messages, response.message]);
+
+      // Update connection preview
+      loadConnections();
+    } catch (error) {
+      console.error('Failed to send file:', error);
+      alert(error.response?.data?.message || 'Failed to send file.');
+    } finally {
+      setSending(false);
+      event.target.value = ''; // Reset file input
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+
+    // Parse the UTC timestamp from database
+    const utcDate = new Date(timestamp);
+
+    // Convert UTC to IST by adding 5 hours 30 minutes (19800000 milliseconds)
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
+    const istDate = new Date(utcDate.getTime() + istOffset);
+
+    const now = new Date();
+    const nowIST = new Date(now.getTime() + istOffset);
+
+    // Check if message is from today (in IST)
+    const isToday = istDate.toDateString() === nowIST.toDateString();
+
+    // Check if message is from yesterday (in IST)
+    const yesterday = new Date(nowIST);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = istDate.toDateString() === yesterday.toDateString();
+
+    // Format time in 12-hour format (IST)
+    const hours = istDate.getHours();
+    const minutes = istDate.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes < 10 ? '0' + minutes : minutes;
+    const timeString = `${displayHours}:${displayMinutes} ${ampm}`;
+
+    if (isToday) {
+      return timeString; // e.g., "12:05 PM"
+    } else if (isYesterday) {
+      return `Yesterday ${timeString}`; // e.g., "Yesterday 3:45 PM"
+    } else {
+      // Show date and time
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dateString = `${months[istDate.getMonth()]} ${istDate.getDate()}`;
+      return `${dateString} ${timeString}`; // e.g., "Jan 29 2:30 PM"
+    }
+  };
+
+  const renderMessage = (msg) => {
+    const isMe = msg.sender_id === currentUserId;
+
+    return (
+      <div
+        key={msg.message_id}
+        className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}
+      >
+        <div
+          className={`px-4 py-2 rounded-xl max-w-[60%] ${isMe
+            ? "bg-[#DCBE05] text-white"
+            : "bg-[#867B2F] text-white"
+            }`}
+        >
+          {msg.message_type === 'text' && (
+            <p>{msg.content}</p>
+          )}
+
+          {msg.message_type === 'file' && msg.attachment && (
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              <a
+                href={msg.attachment.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-gray-200"
+              >
+                {msg.attachment.original_filename}
+              </a>
+            </div>
+          )}
+
+          {msg.message_type === 'voice' && msg.attachment && (
+            <div className="flex items-center gap-2">
+              <Music className="w-5 h-5" />
+              <audio controls className="max-w-xs">
+                <source src={msg.attachment.file_url} type={msg.attachment.file_type} />
+              </audio>
+            </div>
+          )}
+
+          <div className="text-xs mt-1 opacity-70">
+            {formatTimestamp(msg.created_at)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="pt-20 min-h-screen bg-black text-white flex items-center justify-center">
+        <Navbar />
+        <p className="text-xl">Loading connections...</p>
+      </div>
+    );
+  }
+
+  if (connections.length === 0) {
+    return (
+      <div className="pt-20 min-h-screen bg-black text-white">
+        <Navbar />
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">No Connections Yet</h2>
+            <p className="text-gray-400">Connect with alumni or students to start messaging!</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className=" pt-20 min-h-screen bg-black text-white">
+    <div className="pt-20 min-h-screen bg-black text-white">
       <Navbar />
       <div className="flex h-[90vh] px-8 py-6">
         {/* Sidebar */}
         <div className="w-1/3 bg-gray-700 rounded-l-3xl p-4 flex flex-col">
           <h2 className="text-2xl font-bold mb-4">MESSAGES</h2>
           <div className="flex-1 overflow-y-auto space-y-2">
-            {users.map((user) => (
+            {connections.map((conn) => (
               <div
-                key={user.id}
-                onClick={() => setSelectedUser(user)}
-                className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer ${
-                  selectedUser.id === user.id
-                    ? "bg-gray-600"
-                    : "hover:bg-gray-600/60"
-                }`}
+                key={conn.connection_id}
+                onClick={() => handleUserSelect(conn)}
+                className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer ${selectedUser?.connection_user_id === conn.connection_user_id
+                  ? "bg-gray-600"
+                  : "hover:bg-gray-600/60"
+                  }`}
               >
                 <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  src={conn.other_user_avatar}
+                  alt={conn.other_user_name}
+                  className="w-10 h-10 rounded-full object-cover bg-gray-500"
+                  onError={(e) => {
+                    e.target.src = defaultAvatar;
+                  }}
                 />
-                <span>{user.name}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start">
+                    <span className="font-semibold truncate">{conn.other_user_name}</span>
+                    {conn.unread_count > 0 && (
+                      <span className="bg-[#DCBE05] text-black text-xs rounded-full px-2 py-0.5 ml-2">
+                        {conn.unread_count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-300 truncate">
+                    {conn.last_message_preview || 'Start a conversation'}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -58,55 +370,100 @@ const Messages = () => {
 
         {/* Chat Section */}
         <div className="flex-1 bg-gray-800 rounded-r-3xl flex flex-col">
-          {/* Header */}
-          <div className="flex items-center gap-4 p-4 border-b border-gray-700">
-            <img
-              src={selectedUser.avatar}
-              alt={selectedUser.name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-            <div>
-              <h3 className="font-semibold">{selectedUser.name}</h3>
-              <p className="text-green-400 text-sm">● ONLINE</p>
-            </div>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  msg.from === "me" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`px-4 py-2 rounded-xl max-w-[60%] ${
-                    msg.from === "me"
-                      ? "bg-[#DCBE05] text-white"
-                      : "bg-[#867B2F] text-white"
-                  }`}
-                >
-                  {msg.text}
+          {selectedUser ? (
+            <>
+              {/* Header */}
+              <div className="flex items-center gap-4 p-4 border-b border-gray-700">
+                <img
+                  src={selectedUser.other_user_avatar}
+                  alt={selectedUser.other_user_name}
+                  className="w-12 h-12 rounded-full object-cover bg-gray-500"
+                  onError={(e) => {
+                    e.target.src = defaultAvatar;
+                  }}
+                />
+                <div>
+                  <h3 className="font-semibold">{selectedUser.other_user_name}</h3>
+                  <p className="text-sm text-gray-400">{selectedUser.other_user_role || 'Connected'}</p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Input Area */}
-          <div className="flex items-center gap-3 bg-gray-600 p-3 rounded-b-3xl">
-            <Smile className="w-6 h-6 text-gray-300" />
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Type a message"
-              className="flex-1 bg-transparent outline-none text-white placeholder-gray-300"
-            />
-            <Paperclip className="w-6 h-6 text-gray-300 cursor-pointer" />
-            <Mic className="w-6 h-6 text-gray-300 cursor-pointer" />
-          </div>
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <p>No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map(renderMessage)}
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="relative">
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <div className="absolute bottom-16 left-4 bg-gray-700 rounded-xl p-4 shadow-lg z-10 w-80">
+                    <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto">
+                      {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '🩸'].map((emoji, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setInput(input + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="text-2xl hover:bg-gray-600 rounded p-1 cursor-pointer"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 bg-gray-600 p-3 rounded-b-3xl">
+                  <Smile
+                    className="w-6 h-6 text-gray-300 cursor-pointer hover:text-white"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  />
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                    placeholder="Type a message"
+                    disabled={sending}
+                    className="flex-1 bg-transparent outline-none text-white placeholder-gray-300"
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  />
+                  <Paperclip
+                    className="w-6 h-6 text-gray-300 cursor-pointer hover:text-white"
+                    onClick={() => fileInputRef.current?.click()}
+                  />
+                  <Send
+                    className={`w-6 h-6 cursor-pointer ${sending || !input.trim()
+                      ? 'text-gray-500'
+                      : 'text-[#DCBE05] hover:text-[#b39d04]'
+                      }`}
+                    onClick={handleSend}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              <p>Select a connection to start messaging</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

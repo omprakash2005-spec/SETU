@@ -61,7 +61,7 @@ const AlumniLogin = () => {
   };
 
   const goToSignup = () => {
-    navigate("/alumniSignup");
+    navigate("/alumni-signup");
   };
 
   return (
@@ -135,7 +135,7 @@ const AlumniLogin = () => {
         <p className="text-center text-white mt-4">
           Don't have an account?{" "}
           <button
-            onClick={() => navigate("/alumniSignup")}
+            onClick={() => navigate("/alumni-signup")}
             className="underline font-semibold hover:text-gray-300 focus:outline-none"
             type="button"
             disabled={loading}

@@ -27,6 +27,7 @@ const createTables = async () => {
         interests TEXT[],
         is_verified BOOLEAN DEFAULT false,
         is_active BOOLEAN DEFAULT true,
+        verification_document VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

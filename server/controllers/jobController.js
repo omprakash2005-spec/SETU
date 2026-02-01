@@ -673,8 +673,18 @@ export const deleteJob = async (req, res, next) => {
 
     const job = jobResult.rows[0];
 
-    // Only admin or the person who posted the job can delete it
-    if (userRole !== 'admin' && job.posted_by_user_id !== userId) {
+    // Authorization check:
+    // Admin can delete any job
+    // Alumni can only delete their own jobs (but this shouldn't happen for approved jobs)
+    if (userRole === 'admin') {
+      // Admin can delete any job
+    } else if (userRole === 'alumni' && job.posted_by_user_id === userId) {
+      // Alumni trying to delete their own approved job - should use pending requests instead
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot delete approved jobs. Please contact admin if needed.',
+      });
+    } else {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to delete this job.',
@@ -698,6 +708,64 @@ export const deleteJob = async (req, res, next) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to delete job.',
+      error: error.message,
+    });
+  }
+};
+
+/* =========================
+   DELETE PENDING JOB REQUEST (ALUMNI ONLY - THEIR OWN PENDING REQUESTS)
+   ========================= */
+export const deletePendingJobRequest = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // Check if request exists
+    const requestQuery = `
+      SELECT * FROM pending_job_requests WHERE request_id = $1
+    `;
+    const requestResult = await pool.query(requestQuery, [requestId]);
+
+    if (requestResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job request not found.',
+      });
+    }
+
+    const request = requestResult.rows[0];
+
+    // Authorization: Alumni can only delete their own pending requests
+    if (userRole === 'alumni' && request.alumni_user_id === userId && request.status === 'pending') {
+      // Alumni can delete their own pending request
+    } else if (userRole === 'admin') {
+      // Admin can delete any pending request
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own pending job requests.',
+      });
+    }
+
+    const deleteQuery = `
+      DELETE FROM pending_job_requests WHERE request_id = $1
+      RETURNING *
+    `;
+
+    const result = await pool.query(deleteQuery, [requestId]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Job request deleted successfully.',
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error deleting job request:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete job request.',
       error: error.message,
     });
   }

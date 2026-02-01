@@ -5,3 +5,7 @@ node_modules/
 coverage/
 dist/
 build/
+venv/
+.venv/
+__pycache__/
+*.pyc

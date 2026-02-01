@@ -12,6 +12,7 @@ import {
   getMyJobRequests,
   getJobApplications,
   deleteJob,
+  deletePendingJobRequest,
 } from '../controllers/jobController.js';
 import { authenticate, isAdmin, isAlumni, isStudent, isStudentOrAlumni } from '../middleware/auth.js';
 
@@ -72,5 +73,8 @@ router.get('/:jobId/applications', authenticate, getJobApplications);
 
 // Delete a job (admin or job poster only)
 router.delete('/:jobId', authenticate, deleteJob);
+
+// Delete pending job request (alumni - their own pending requests, or admin)
+router.delete('/pending/request/:requestId', authenticate, deletePendingJobRequest);
 
 export default router;

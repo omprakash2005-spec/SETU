@@ -28,40 +28,45 @@ const StudentLogin = () => {
     setError("");
 
     try {
-      // Call the login API
-      const response = await authAPI.login({
-        email: formData.email,
-        password: formData.password,
+      // Call the student login API
+      const response = await fetch('http://localhost:5001/api/auth/student/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       });
 
-      if (response.success) {
-        // Check if user is a student
-        if (response.data.user.role !== "student") {
-          setError("This login is for students only. Please use the correct login page.");
-          setLoading(false);
-          return;
-        }
+      const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      if (data.success) {
         // Store token and user data
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
 
         // Set user context
-        setUser(response.data.user);
+        setUser(data.data.user);
 
         // Navigate to home
         navigate("/home");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const goToSignup = () => {
-    navigate("/studentSignup");
+    navigate("/student-signup");
   };
 
   return (
@@ -135,7 +140,7 @@ const StudentLogin = () => {
         <p className="text-center text-white mt-4">
           Don't have an account?{" "}
           <button
-            onClick={() => navigate("/studentSignup")}
+            onClick={() => navigate("/student-signup")}
             className="underline font-semibold hover:text-gray-300 focus:outline-none"
             type="button"
             disabled={loading}

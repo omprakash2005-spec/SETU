@@ -1,0 +1,235 @@
+{
+  "info": {
+    "name": "SETU - Student Signup API",
+    "description": "Complete API collection for SETU Student Signup with OTP verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Send OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test.student@college.edu\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/send-otp",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "send-otp"]
+        },
+        "description": "Send OTP to student email. OTP expires in 5 minutes. Max 3 requests per minute per email."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Verify OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test.student@college.edu\",\n  \"otp\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/verify-otp",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "verify-otp"]
+        },
+        "description": "Verify the 6-digit OTP sent to email. Must be done before signup."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Student Signup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "full_name",
+              "value": "John Doe",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "test.student@college.edu",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "password123",
+              "type": "text"
+            },
+            {
+              "key": "roll_number",
+              "value": "2021CS001",
+              "type": "text"
+            },
+            {
+              "key": "department",
+              "value": "Computer Science",
+              "type": "text"
+            },
+            {
+              "key": "graduation_year",
+              "value": "2025",
+              "type": "text"
+            },
+            {
+              "key": "student_id_card",
+              "type": "file",
+              "src": "/path/to/id-card.jpg",
+              "description": "Student ID card (jpg/png/pdf, max 5MB, optional)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/signup",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "signup"]
+        },
+        "description": "Complete student signup after OTP verification. Uploads ID card to Cloudinary and creates student account."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Student Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test.student@college.edu\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "login"]
+        },
+        "description": "Login with email and password. Returns JWT token and student profile."
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Invalid OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test.student@college.edu\",\n  \"otp\": \"000000\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/verify-otp",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "verify-otp"]
+        },
+        "description": "Test case: Invalid OTP should return 400 error"
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Duplicate Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test.student@college.edu\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/send-otp",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "send-otp"]
+        },
+        "description": "Test case: Sending OTP for already registered email should return error"
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Signup Without Verification",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "full_name",
+              "value": "Jane Doe",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "unverified@college.edu",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "password123",
+              "type": "text"
+            },
+            {
+              "key": "roll_number",
+              "value": "2021CS002",
+              "type": "text"
+            },
+            {
+              "key": "department",
+              "value": "Computer Science",
+              "type": "text"
+            },
+            {
+              "key": "graduation_year",
+              "value": "2025",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/student/signup",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "student", "signup"]
+        },
+        "description": "Test case: Signup without OTP verification should fail"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}

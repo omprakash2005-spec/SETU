@@ -67,4 +67,45 @@ export const deleteFromCloudinary = async (imageUrl) => {
   }
 };
 
+/**
+ * Upload document (ID card - image or PDF) to Cloudinary
+ * @param {Buffer} fileBuffer - File buffer from multer
+ * @param {string} mimetype - File mimetype
+ * @param {string} folder - Cloudinary folder (default: 'setu/student_ids')
+ * @returns {Promise<string>} - Cloudinary file URL
+ */
+export const uploadDocumentToCloudinary = (fileBuffer, mimetype, folder = 'setu/student_ids') => {
+  return new Promise((resolve, reject) => {
+    // Determine resource type based on mimetype
+    const resourceType = mimetype === 'application/pdf' ? 'raw' : 'image';
+    
+    const uploadOptions = {
+      folder,
+      resource_type: resourceType,
+    };
+
+    // Add transformations only for images, not PDFs
+    if (resourceType === 'image') {
+      uploadOptions.transformation = [
+        { width: 2000, height: 2000, crop: 'limit' }, // Max size for ID cards
+        { quality: 'auto:good' },
+      ];
+    }
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      uploadOptions,
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary document upload error:', error);
+          reject(new Error('Document upload failed'));
+        } else {
+          resolve(result.secure_url);
+        }
+      }
+    );
+
+    uploadStream.end(fileBuffer);
+  });
+};
+
 export default cloudinary;

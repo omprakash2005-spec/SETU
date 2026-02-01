@@ -9,6 +9,7 @@ import {
   FaBuilding,
   FaMapMarkerAlt,
   FaUserTie,
+  FaTrash,
 } from "react-icons/fa";
 
 const Admin_Jobs = () => {
@@ -131,6 +132,27 @@ const Admin_Jobs = () => {
         requirements: "",
       });
       if (user.role === "admin") fetchJobs();
+    }
+  };
+
+  // ================= DELETE JOB =================
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm("Are you sure you want to delete this job?")) {
+      return;
+    }
+
+    try {
+      const response = await jobsAPI.deleteJob(jobId);
+      
+      if (response.success) {
+        // Remove job from local state
+        setJobs((prev) => prev.filter((job) => job.job_id !== jobId));
+        alert("Job deleted successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to delete job:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Failed to delete job";
+      alert(errorMsg);
     }
   };
 
@@ -276,10 +298,23 @@ const Admin_Jobs = () => {
                     key={job.job_id}
                     className="bg-[#1a1a1a] p-5 rounded-xl shadow-md space-y-3"
                   >
-                    <h3 className="font-semibold text-lg text-[#C5B239] flex items-center gap-2">
-                      <FaBriefcase />
-                      {job.title}
-                    </h3>
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-lg text-[#C5B239] flex items-center gap-2">
+                        <FaBriefcase />
+                        {job.title}
+                      </h3>
+
+                      {/* Delete button for admin */}
+                      {user?.role === "admin" && (
+                        <button
+                          onClick={() => handleDeleteJob(job.job_id)}
+                          className="text-red-400 hover:text-red-500 hover:bg-red-900/20 p-2 rounded-lg transition-all"
+                          title="Delete job"
+                        >
+                          <FaTrash className="text-sm" />
+                        </button>
+                      )}
+                    </div>
 
                     <div className="flex flex-wrap gap-3 text-sm text-gray-400">
                       <span className="flex items-center gap-1">
