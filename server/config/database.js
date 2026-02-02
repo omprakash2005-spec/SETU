@@ -15,23 +15,25 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
 
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  max: 10, // Reduce max connections to avoid overloading free tier
+  idleTimeoutMillis: 10000, // Close idle clients faster (10s)
+  connectionTimeoutMillis: 60000, // Allow longer initial connection time (60s)
+  allowExitOnIdle: false, // Keep event loop alive
 
   // Enable SSL only when needed (Neon)
   ssl: useSSL
     ? {
-        rejectUnauthorized: false,   // Required for Neon
-      }
+      rejectUnauthorized: false,
+      keepAlive: true, // IMPORTANT: Keep TCP connection alive
+      keepAliveInitialDelayMillis: 10000 // Send keepalive packet after 10s
+    }
     : false,
 });
 
 // Log connection result
 pool.on('connect', () => {
   console.log(
-    `✅ Connected to PostgreSQL database ${
-      useSSL ? '(Neon + SSL)' : '(Local)'
+    `✅ Connected to PostgreSQL database ${useSSL ? '(Neon + SSL)' : '(Local)'
     }`
   );
 });

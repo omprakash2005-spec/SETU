@@ -1,0 +1,80 @@
+[
+  {
+    "id": 2,
+    "full_name": "Sneha Gupta",
+    "roll_number": "A44556",
+    "college_id": "AID888",
+    "college_name": "Academy of Technology",
+    "department": "Computer Science",
+    "passing_year": 2022,
+    "created_at": "2026-01-30T13:53:00.108Z",
+    "registration_number": null,
+    "degree": null,
+    "university_name": null
+  },
+  {
+    "id": 1,
+    "full_name": "ARATRIK BANDYOPADHYAY",
+    "roll_number": "16931121009",
+    "college_id": "AID999",
+    "college_name": "Academy of Technology",
+    "department": "Computer Science & Engineering",
+    "passing_year": 2025,
+    "created_at": "2026-01-30T13:53:00.108Z",
+    "registration_number": "211690100110192",
+    "degree": "Bachelor of Technology",
+    "university_name": "Maulana Abul Kalam Azad University of Technology, West Bengal"
+  },
+  {
+    "id": 3,
+    "full_name": "Amit Verma",
+    "roll_number": "A11223",
+    "college_id": "AID999",
+    "college_name": "ACADEMY OF TECHNOLOGY",
+    "department": "Electronics",
+    "passing_year": 2023,
+    "created_at": "2026-02-01T03:12:00.339Z",
+    "registration_number": null,
+    "degree": null,
+    "university_name": null
+  },
+  {
+    "id": 4,
+    "full_name": "Sneha Gupta",
+    "roll_number": "A44556",
+    "college_id": "AID888",
+    "college_name": "ACADEMY OF TECHNOLOGY",
+    "department": "Computer Science",
+    "passing_year": 2022,
+    "created_at": "2026-02-01T03:12:00.339Z",
+    "registration_number": null,
+    "degree": null,
+    "university_name": null
+  },
+  {
+    "id": 5,
+    "full_name": "Aratrik Bandyopadhyay",
+    "roll_number": "16931121009",
+    "college_id": null,
+    "college_name": "ACADEMY OF TECHNOLOGY",
+    "department": "Computer Science & Engineering",
+    "passing_year": 2025,
+    "created_at": "2026-02-01T03:12:00.339Z",
+    "registration_number": "211690100110192",
+    "degree": "Bachelor of Technology",
+    "university_name": "Maulana Abul Kalam Azad University of Technology, West Bengal"
+  },
+  {
+    "id": 7,
+    "full_name": "Smriti Devi Sharma",
+    "roll_number": "17921508821",
+    "college_id": null,
+    "college_name": "Academy of Technology",
+    "department": "Computer Science & Engineering",
+    "passing_year": 2026,
+    "created_at": "2026-02-01T05:23:31.309Z",
+    "registration_number": "221216060110192",
+    "degree": "Bachelor of Technology",
+    "university_name": "Maulana Abul Kalam Azad University of Technology, West Bengal"
+  }
+]

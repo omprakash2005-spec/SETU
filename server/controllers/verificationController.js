@@ -1,5 +1,7 @@
 import Tesseract from 'tesseract.js';
 import pool from '../config/database.js';
+import { extractDataWithGemini } from '../utils/geminiExtractor.js';
+import axios from 'axios'; // check if needed for URL buffer fetching
 
 // ---- OCR WORKER (ADD THIS) ----
 let worker = null;
@@ -11,9 +13,53 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
 /**
  * Perform OCR on the uploaded image buffer or URL
+ */
+import { extractDataWithGroq } from '../utils/groqExtractor.js';
+
+/**
+ * Perform OCR on the uploaded image buffer or URL
+ * Strategies: Llama 3.2 (if enabled) -> Tesseract (Fallback)
  * @param {Buffer|string} imageSource - Buffer or URL of the image
  */
 const performOCR = async (imageSource) => {
+    // Strategy 1: Llama 3.2 Vision (Groq) - High Speed AI
+    if (process.env.USE_LLAMA_OCR === 'true') {
+        let bufferToProcess = null;
+
+        if (Buffer.isBuffer(imageSource)) {
+            bufferToProcess = imageSource;
+        } else if (typeof imageSource === 'string' && imageSource.startsWith('http')) {
+            // Fetch buffer from URL for AI processing
+            try {
+                console.log('🌐 Fetching image for Llama OCR...');
+                const response = await axios.get(imageSource, { responseType: 'arraybuffer' });
+                bufferToProcess = Buffer.from(response.data);
+            } catch (fetchError) {
+                console.error('❌ Failed to fetch image for AI OCR:', fetchError.message);
+            }
+        }
+
+        if (bufferToProcess) {
+            const groqData = await extractDataWithGroq(bufferToProcess);
+            if (groqData) {
+                console.log('✅ Used Llama 3.2 OCR');
+                // If Llama returns full structured data, we might want to use it directly
+                // But performOCR typically returns text. 
+                // For now, let's return a JSON string or handle strictly.
+                // Actually, extractWithGroq returns an Object. 
+                // We should probably adapt verifyDocument to handle this object directly
+                // OR we can serialize it back to text for the regex parser to handle 
+                // (or return it as a special object that verifyDocument detects).
+
+                // SIMPLIFIED APPROACH: Return JSON string directly.
+                // extractFields will detect this and parse it, skipping regex.
+                return JSON.stringify(groqData);
+            }
+        }
+        console.warn('⚠️ Llama OCR failed or skipped. Falling back to Tesseract.');
+    }
+
+    // Strategy 2: Tesseract.js (Local / Free)
     try {
         if (!worker) {
             worker = await Tesseract.createWorker('eng');
@@ -38,6 +84,17 @@ const performOCR = async (imageSource) => {
  * @returns {string} - 'PROVISIONAL_CERT' or 'ID_CARD'
  */
 const detectDocumentType = (text) => {
+    // If it's a JSON string (from Llama), check for registration_number or default to ID_CARD
+    // Actually, if it's Llama, we might not need this if we return the object directly.
+    // But for safety:
+    try {
+        if (text.trim().startsWith('{')) {
+            const data = JSON.parse(text);
+            if (data.registration_number && data.registration_number.length > 5) return 'PROVISIONAL_CERT';
+            return 'ID_CARD';
+        }
+    } catch (e) { }
+
     const lowerText = text.toLowerCase();
     if (lowerText.includes('provisional certificate') ||
         lowerText.includes('provisional cert')) {
@@ -164,10 +221,33 @@ const extractFromProvisionalCert = (text) => {
 
 /**
  * Parse OCR text to extract fields
- * @param {string} text - Raw OCR text
+ * @param {string} text - Raw OCR text or JSON string
  * @param {string} userType - 'student' or 'alumni'
  */
 const extractFields = (text, userType) => {
+    // 1. AI Bypass: If text is valid JSON, use it directly!
+    if (text.trim().startsWith('{')) {
+        try {
+            console.log('🤖 AI JSON Detected. Bypassing Regex...');
+            const data = JSON.parse(text);
+
+            // Normalize keys if needed (Groq returns matched keys mostly)
+            return {
+                full_name: data.full_name || '',
+                roll_number: data.roll_number || '',
+                college_id: data.college_id || '',
+                college_name: data.college_name || '',
+                department: data.department || '',
+                passing_year: data.passing_year || '',
+                registration_number: data.registration_number || '',
+                degree: data.degree || '',
+                university_name: data.university_name || ''
+            };
+        } catch (e) {
+            console.warn('⚠️ Failed to parse AI JSON. Falling back to Regex.');
+        }
+    }
+
     // NEW: Detect document type and route to appropriate extractor
     const docType = detectDocumentType(text);
     if (docType === 'PROVISIONAL_CERT') {
@@ -287,8 +367,31 @@ const extractFields = (text, userType) => {
     }
 
     // Extract Department
-    const deptMatch = text.match(/(?:Dept|Department|Branch)[:\s]+([a-zA-Z\s]+)/i);
-    if (deptMatch) extracted.department = deptMatch[1].toUpperCase().trim();
+    const deptMatch = text.match(/(?:Dept|Department|Branch)[:\s]+([a-zA-Z\s&]+)/i);
+    if (deptMatch) {
+        let dept = deptMatch[1].trim();
+        // STRICT CLEANING: Remove "Address" lines or trailing noise immediately
+        // Example input: "CSE N\nADDRESS..."
+        dept = dept.split('\n')[0].trim(); // Take only the first line
+        dept = dept.replace(/\s+Address.*/i, ''); // Remove "Address" keyword if on same line
+        dept = dept.replace(/\s+Road.*/i, '');
+        dept = dept.replace(/\s+Dist.*/i, '');
+
+        // Remove 'Department :' prefix if repeated
+        dept = dept.replace(/^Department\s*[:.-]?\s*/i, '');
+
+        // AUTOCORRECT: If it starts with a known department AND has noise, force it to be just that code
+        const knownDepts = ['CSE', 'ECE', 'IT', 'EE', 'ME', 'CE', 'AEIE', 'MCA', 'BCA', 'CSBS'];
+        for (const known of knownDepts) {
+            // Check if dept starts with known code (e.g. "CSE N" or "ECE Dept")
+            if (dept.toUpperCase().startsWith(known)) {
+                dept = known; // Force clean value
+                break;
+            }
+        }
+
+        extracted.department = dept.toUpperCase().trim();
+    }
 
     // Extract Passing Year (for Alumni)
     if (userType === 'alumni') {
@@ -323,14 +426,11 @@ const matchWithMasterDB = async (extractedData, userType) => {
     let query, params;
 
     if (userType === 'alumni' && extractedData.registration_number) {
-        // Alumni: check roll_number OR college_id OR registration_number
-        // NEW: Use ILIKE for case-insensitive college name matching
-        query = `SELECT * FROM ${table} WHERE LOWER(college_name) = LOWER($1) AND (roll_number = $2 OR college_id = $3 OR registration_number = $4)`;
-        const roll = extractedData.roll_number || 'UNKNOWN_ROLL';
-        const colId = extractedData.college_id || 'UNKNOWN_COL_ID';
+        // Alumni: check ONLY registration_number (ignoring roll_number as per user request)
+        query = `SELECT * FROM ${table} WHERE LOWER(college_name) = LOWER($1) AND registration_number = $2`;
         const regNum = extractedData.registration_number;
-        params = [extractedData.college_name, roll, colId, regNum];
-        console.log('[DEBUG] Alumni query with registration_number:', { college: extractedData.college_name, roll, regNum });
+        params = [extractedData.college_name, regNum];
+        console.log('[DEBUG] Alumni query strictly by Registration Number:', { college: extractedData.college_name, regNum });
     } else {
         // EXISTING: Students or alumni without registration number
         // NEW: Also use case-insensitive matching for consistency
@@ -339,6 +439,14 @@ const matchWithMasterDB = async (extractedData, userType) => {
         const colId = extractedData.college_id || 'UNKNOWN_COL_ID';
         params = [extractedData.college_name, roll, colId];
     }
+
+    console.log('🔍 Executing DB Master Match:', {
+        table,
+        college_name: extractedData.college_name,
+        roll: extractedData.roll_number,
+        regNum: extractedData.registration_number,
+        params
+    });
 
     const result = await pool.query(query, params);
 
@@ -359,7 +467,8 @@ const matchWithMasterDB = async (extractedData, userType) => {
 
     // Alumni passing year check
     if (userType === 'alumni') {
-        if (masterRecord.passing_year !== extractedData.passing_year) {
+        // Loose comparison (String vs Number)
+        if (String(masterRecord.passing_year) !== String(extractedData.passing_year)) {
             return { match: false, reason: 'Passing Year mismatch.' };
         }
     }
@@ -396,7 +505,44 @@ export const verifyDocument = async (userId, imageSource, userType) => {
     console.log('Extracted Data:', extractedData);
 
     // 3. Validation
-    if (!extractedData.full_name || !extractedData.college_name) {
+    // ENHANCEMENT: If LLM is enabled, run it to clean/verify data even if OCR succeeded partially
+    if (process.env.USE_LLM_EXTRACTION === 'true') {
+        console.log('🤖 LLM Enabled: Attempting advanced extraction with Gemini...');
+        try {
+            let imageBufferForGemini = imageSource;
+
+            // Check if imageSource is a specific URL string that needs fetching
+            // (Cloudinary URLs etc.)
+            if (typeof imageSource === 'string' && imageSource.startsWith('http')) {
+                console.log('📥 Fetching image for Gemini from URL...');
+                const response = await axios.get(imageSource, { responseType: 'arraybuffer' });
+                imageBufferForGemini = Buffer.from(response.data);
+            }
+
+            const llmExtracted = await extractDataWithGemini(imageBufferForGemini);
+
+            if (llmExtracted) {
+                console.log('✅ Gemini Extraction Success:', llmExtracted);
+
+                // Overlay LLM data (usually more accurate) onto extracted data
+                if (llmExtracted.full_name) extractedData.full_name = llmExtracted.full_name;
+                if (llmExtracted.roll_number) extractedData.roll_number = llmExtracted.roll_number;
+                if (llmExtracted.college_id) extractedData.college_id = llmExtracted.college_id;
+                if (llmExtracted.college_name) extractedData.college_name = llmExtracted.college_name;
+                // CLEANUP: LLM usually extracts strictly 'CSE', avoiding 'CSE N ADDRESS' issues
+                if (llmExtracted.department) extractedData.department = llmExtracted.department;
+                if (llmExtracted.passing_year) extractedData.passing_year = llmExtracted.passing_year;
+                if (llmExtracted.registration_number) extractedData.registration_number = llmExtracted.registration_number;
+            }
+        } catch (llmError) {
+            console.error('❌ LLM Extraction Failed:', llmError);
+        }
+    } else if (!extractedData.full_name || (!extractedData.roll_number && !extractedData.college_id)) {
+        // Fallback logic for when LLM is NOT enabled but OCR failed
+        console.log('⚠️ OCR incomplete and LLM disabled.');
+    }
+
+    if (!extractedData.full_name || (!extractedData.roll_number && !extractedData.college_id)) {
         // Logic: If OCR fails to get critical fields, we might mark FAILED or PENDING for manual review.
         // Prompt says: "If required fields are missing, mark verification as FAILED"
         return { status: 'FAILED', reason: 'Missing mandatory fields (Name or College) in ID card', extractedData };
