@@ -6,7 +6,12 @@ import { uploadIdCard, upload } from '../config/multer.js';
 const router = express.Router();
 
 // Public routes
-router.post('/register', register);
+router.post(
+    '/register',
+    uploadIdCard.single('verification_document'), // 🔥 REQUIRED
+    register
+);
+
 router.post('/login', login);
 router.post('/alumni/signup', uploadIdCard.single('verification_document'), alumniSignup);
 router.get('/users/:id', getUserById); // Public profile view

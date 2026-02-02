@@ -57,13 +57,20 @@ export const register = async (req, res, next) => {
     const user = result.rows[0];
 
     // 🔥 STUDENT VERIFICATION (THIS WAS MISSING)
+    // ---- STUDENT VERIFICATION ----
     let verificationResult = { status: 'PENDING', isVerified: false };
 
-    if (role === 'student' && documentUrl) {
+    if (req.file) {
       try {
-        const { verifyDocument } = await import('./verificationController.js');
+        console.log('🚀 Starting STUDENT verification:', user.id);
 
-        console.log('🚀 Starting verification for student:', user.id);
+        const documentUrl = await uploadDocumentToCloudinary(
+          req.file.buffer,
+          req.file.mimetype,
+          'setu/student_docs'
+        );
+
+        const { verifyDocument } = await import('./verificationController.js');
 
         verificationResult = await verifyDocument(
           user.id,
@@ -71,11 +78,15 @@ export const register = async (req, res, next) => {
           'student'
         );
 
-        console.log('✅ Student verification result:', verificationResult);
+        console.log('✅ STUDENT verification result:', verificationResult);
+
+        user.verification_status = verificationResult.status;
+        user.is_verified = verificationResult.isVerified;
       } catch (err) {
-        console.error('❌ Student verification crashed:', err);
+        console.error('❌ STUDENT verification failed:', err);
       }
     }
+
 
     const token = generateToken({
       id: user.id,
